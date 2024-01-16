@@ -35,52 +35,67 @@ public class PixelGrid : MonoBehaviour
 
     // Runs once every frame
     void Update() {
+
+        // More temporary stuff for testing... Selecting element and placing on grid
         if(Input.GetKeyDown(KeyCode.Alpha1)) {
             currentElement = 0;
-            Debug.Log("Sand");
+            Debug.Log("Stone");
         }
         else if(Input.GetKeyDown(KeyCode.Alpha2)) {
             currentElement = 1;
-            Debug.Log("Dirt");
+            Debug.Log("Sand");
         }
         else if(Input.GetKeyDown(KeyCode.Alpha3)) {
             currentElement = 2;
-            Debug.Log("Water");
+            Debug.Log("Dirt");
         }
         else if(Input.GetKeyDown(KeyCode.Alpha4)) {
             currentElement = 3;
-            Debug.Log("Oil");
+            Debug.Log("Water");
         }
         else if(Input.GetKeyDown(KeyCode.Alpha5)) {
             currentElement = 4;
-            Debug.Log("N/A = Water");
+            Debug.Log("Oil");
         }
         else if(Input.GetKeyDown(KeyCode.Alpha6)) {
             currentElement = 5;
-            Debug.Log("N/A = Water");
+            Debug.Log("N/A = Sand");
         }
 
-        // Optimize this monstrosity lol
         float mouseX = Input.mousePosition.x/Screen.width;
         float mouseY = Input.mousePosition.y/Screen.height;
         if(mouseX > 0 && mouseX < 1 && mouseY > 0 && mouseY < 1) {
-            if(Input.GetMouseButton(0)) {
-                switch(currentElement) {
-                    case 0:
-                        grid[(int)Mathf.Floor(mouseX*gridWidth), gridHeight-(int)Mathf.Floor(mouseY*gridHeight)] = new Sand((int)Mathf.Floor(mouseX*gridWidth), gridHeight-(int)Mathf.Floor(mouseY*gridHeight), this);
-                        break;
-                    case 1:
-                        grid[(int)Mathf.Floor(mouseX*gridWidth), gridHeight-(int)Mathf.Floor(mouseY*gridHeight)] = new Dirt((int)Mathf.Floor(mouseX*gridWidth), gridHeight-(int)Mathf.Floor(mouseY*gridHeight), this);
-                        break;
-                    case 2:
-                        grid[(int)Mathf.Floor(mouseX*gridWidth), gridHeight-(int)Mathf.Floor(mouseY*gridHeight)] = new Water((int)Mathf.Floor(mouseX*gridWidth), gridHeight-(int)Mathf.Floor(mouseY*gridHeight), this);
-                        break;
-                    case 3:
-                        grid[(int)Mathf.Floor(mouseX*gridWidth), gridHeight-(int)Mathf.Floor(mouseY*gridHeight)] = new Oil((int)Mathf.Floor(mouseX*gridWidth), gridHeight-(int)Mathf.Floor(mouseY*gridHeight), this);
-                        break;
-                    default:
-                        grid[(int)Mathf.Floor(mouseX*gridWidth), gridHeight-(int)Mathf.Floor(mouseY*gridHeight)] = new Water((int)Mathf.Floor(mouseX*gridWidth), gridHeight-(int)Mathf.Floor(mouseY*gridHeight), this);
-                        break;
+            if(Input.GetMouseButton(0) || Input.GetMouseButton(1)) {
+                int elementToSpawn = Input.GetMouseButton(1) ? -1 : currentElement;
+                int _x = (int)Mathf.Floor(mouseX*gridWidth);
+                int _y = (int)(gridHeight-Mathf.Floor(mouseY*gridHeight));
+                for(int i = _x - 1; i <= _x + 1; i++) {
+                    for(int j = _y - 1; j <= _y + 1; j++) {
+                        if(!IsInBounds(i, j)) continue;
+                        switch(elementToSpawn) {
+                        case -1:
+                            grid[i, j] = new EmptyCell(i, j, this);
+                            break;
+                        case 0:
+                            grid[i, j] = new Stone(i, j, this);
+                            break;
+                        case 1:
+                            grid[i, j] = new Sand(i, j, this);
+                            break;
+                        case 2:
+                            grid[i, j] = new Dirt(i, j, this);
+                            break;
+                        case 3:
+                            grid[i, j] = new Water(i, j, this);
+                            break;
+                        case 4:
+                            grid[i, j] = new Oil(i, j, this);
+                            break;
+                        default:
+                            grid[i, j] = new Stone(i, j, this);
+                            break;
+                    }
+                    }
                 }
             }
         }
@@ -101,11 +116,11 @@ public class PixelGrid : MonoBehaviour
     // Runs through the entire grid of Elements and executes their respective step() function
     void IterateSteps() {
         for(int y = gridHeight-1; y >= 0; y--) { // Starts at the gridHeight and decreases so it runs from bottom to top (Needed for the simulation)
-            for(int x = 0; x < gridWidth; x++) {
+            for (int x = (UnityEngine.Time.frameCount % 2 == 0) ? 0 : gridWidth - 1; (UnityEngine.Time.frameCount % 2 == 0) ? x < gridWidth : x >= 0; x += (UnityEngine.Time.frameCount % 2 == 0) ? 1 : -1) { // This ugly mess alternates the direction of column based on frame count... this ensures better randomness for movement like flowing liquids
                 grid[x, y].step(this);
             }
         }
-        for(int y = gridHeight-1; y >= 0; y--) { // Starts at the gridHeight and decreases so it runs from bottom to top (Needed for the simulation)
+        for(int y = 0; y < gridHeight; y++) { // Loops through all pixels, order doesnt matter... resets the hasStepped flag... might be a better way to do this
             for(int x = 0; x < gridWidth; x++) {
                 grid[x, y].hasStepped = false;
             }

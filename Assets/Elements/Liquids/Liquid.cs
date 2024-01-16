@@ -4,6 +4,9 @@ using UnityEngine.Scripting.APIUpdating;
 
 public abstract class Liquid : Element {
 
+    // Variables specifically for Liquid element properties
+    protected int dispersionRate;
+
     int moveDirection = Random.Range(1, 3) == 1 ? 1 : -1; // This determines whether the liquid will be moving to the left or right when flowing
 
     protected Liquid(int x, int y, PixelGrid grid) {
@@ -30,8 +33,9 @@ public abstract class Liquid : Element {
         else if(CanMakeMove(1, 1)) { // DownRight
             SwapPixel(grid, grid.grid[pixelX, pixelY], grid.grid[pixelX+1, pixelY+1]);
         }
-        else if(CanMakeMove(moveDirection, 0)) { // Right or Left, depending on moveDirection (defaults to left)
-            SwapPixel(grid, grid.grid[pixelX, pixelY], grid.grid[pixelX+moveDirection, pixelY]);
+        else if(TryDispersion(moveDirection * dispersionRate, 0) != 31415) { // Right or Left, depending on moveDirection (defaults to left)
+            int temp = TryDispersion(moveDirection * dispersionRate, 0);
+            SwapPixel(grid, grid.grid[pixelX, pixelY], grid.grid[pixelX+temp, pixelY]);
         }
         else { // Changes horizontal move direction when it can't move horizontally... This is implemented so liquid continues to flow the same direction until obstructed, then changes direction
             moveDirection = -moveDirection;

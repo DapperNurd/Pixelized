@@ -7,6 +7,7 @@ public class Water : Liquid {
         elementType = ElementType.WATER;
         color = blue;
         density = 1f;
+        dispersionRate = 4;
     }
 
 }
