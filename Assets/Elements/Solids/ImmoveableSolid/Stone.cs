@@ -7,6 +7,8 @@ public class Stone : ImmoveableSolid {
         elementType = ElementType.STONE;
         color = _color;
         density = 3f;
+        frictionFactor = 0.7f;
+        bounciness = 0.1f;
     }
 
 }

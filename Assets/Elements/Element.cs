@@ -1,5 +1,4 @@
-using Unity.VisualScripting;
-using UnityEngine;
+using System;
 
 public enum ElementType
 {
@@ -23,14 +22,23 @@ public enum ElementType
 public abstract class Element
 {
     // Variables for Element properties
+    public ElementType elementType;
     public int pixelX;
     public int pixelY;
-    public ElementType elementType;
+    public UnityEngine.Vector2 lastValidPos;
+    public UnityEngine.Vector2 velocity;
     public UnityEngine.Color color;
     public float density;
+    public float frictionFactor;
+    public float bounciness;
     public bool isSolid;
+    public bool isFalling = true;
+
+    public float xThreshold = 0;
+    public float yThreshold = 0;
 
     // Variables for simulation
+    public static UnityEngine.Vector2 gravity = new UnityEngine.Vector2(0, 3); // Note: Vertical movement is inverted... positive is downwards
     public PixelGrid grid;
     public bool hasStepped;
 
@@ -41,7 +49,7 @@ public abstract class Element
 
         for(int y = 0; y < height; y++) {
             for(int x = 0; x < width; x++) {
-                tempGrid[x, y] = new EmptyCell(x, y, grid);
+                tempGrid[x, y] = (y < height-8) ? new EmptyCell(x, y, grid) : new Stone(x, y, grid);
             }
         }
 
@@ -72,20 +80,21 @@ public abstract class Element
     }
 
     // I really  don't like this function lol but idk how else to do it
-    public virtual int TryDispersion(int horizontalOffset, int verticalOffset) {
-        int verticalDir = pixelY+verticalOffset;
-        int moveDirection = (horizontalOffset > 0) ? 1 : -1;
-        for(int i = 1; i <= Mathf.Abs(horizontalOffset); i++) {
-            int horizontalDir = pixelX+(i*moveDirection);
-            if (
-                (PixelGrid.IsInBounds(horizontalDir, verticalDir)) &&
-                ((grid.grid[horizontalDir, verticalDir].density > density && verticalDir < pixelY) || (grid.grid[horizontalDir, verticalDir].density < density && verticalDir >= pixelY)) == true
-            ) continue;
-            if(i == 1) return 31415; // I hate this but I can't think of a better way... basically returning false, or a number that will never be normally calculated
-            return (i-1)*moveDirection;
-        }
-        return horizontalOffset;
-    }
+    // public virtual int TryDispersion(int horizontalOffset, int verticalOffset) {
+    //     int verticalDir = pixelY+verticalOffset;
+    //     int moveDirection = (horizontalOffset > 0) ? 1 : -1;
+    //     for(int i = 1; i <= Mathf.Abs(horizontalOffset); i++) {
+    //         int horizontalDir = pixelX+(i*moveDirection);
+    //         if (
+    //             (PixelGrid.IsInBounds(horizontalDir, verticalDir)) &&
+    //             ((grid.grid[horizontalDir, verticalDir].density > density && verticalDir < pixelY) || (grid.grid[horizontalDir, verticalDir].density < density && verticalDir >= pixelY)) == true
+    //         ) continue;
+    //         if(i == 1) return 31415; // I hate this but I can't think of a better way... basically returning false, or a number that will never be normally calculated
+    //         return (i-1)*moveDirection;
+    //     }
+    //     return horizontalOffset;
+    // }
 
     public abstract void step(PixelGrid grid);
+    //protected abstract bool actOnNeighboringElement(Element neighbor, int modifiedMatrixX, int modifiedMatrixY, PixelGrid grid, bool isFinal, bool isFirst, UnityEngine.Vector2 lastValidLocation, int depth);
 }

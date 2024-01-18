@@ -18,4 +18,7 @@ public abstract class ImmoveableSolid : Element {
         return;
     }
 
+    //protected override bool actOnNeighboringElement(Element neighbor, int modifiedMatrixX, int modifiedMatrixY, PixelGrid grid, bool isFinal, bool isFirst, UnityEngine.Vector2 lastValidLocation, int depth) {
+    //    return false;
+    //}
 }

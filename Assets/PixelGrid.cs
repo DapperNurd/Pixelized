@@ -5,10 +5,12 @@ using UnityEngine;
 public class PixelGrid : MonoBehaviour
 {
 
-    public static int gridWidth = 160;
-    public static int gridHeight = 95;
+    public static int gridWidth = 160*2;
+    public static int gridHeight = 95*2;
     // public static int gridWidth = 6;
     // public static int gridHeight = 4;
+
+    public bool isPaused = false;
 
     int currentElement = 0; // temporary
 
@@ -31,6 +33,14 @@ public class PixelGrid : MonoBehaviour
             output += "]\n";
         }
         Debug.Log(output);
+    }
+
+    void FillGrid() {
+        for(int y = 0; y < gridHeight; y++) {
+            for(int x = 0; x < gridWidth; x++) {
+                grid[x, y] = new EmptyCell(x, y, this);
+            }
+        }
     }
 
     // Runs once every frame
@@ -61,6 +71,13 @@ public class PixelGrid : MonoBehaviour
             currentElement = 5;
             Debug.Log("N/A = Sand");
         }
+        else if(Input.GetKeyDown(KeyCode.R)) {
+            FillGrid();
+            isPaused = true;
+        }
+        else if(Input.GetKeyDown(KeyCode.Space)) {
+            isPaused = !isPaused;
+        }
 
         float mouseX = Input.mousePosition.x/Screen.width;
         float mouseY = Input.mousePosition.y/Screen.height;
@@ -69,32 +86,32 @@ public class PixelGrid : MonoBehaviour
                 int elementToSpawn = Input.GetMouseButton(1) ? -1 : currentElement;
                 int _x = (int)Mathf.Floor(mouseX*gridWidth);
                 int _y = (int)(gridHeight-Mathf.Floor(mouseY*gridHeight));
-                for(int i = _x - 1; i <= _x + 1; i++) {
-                    for(int j = _y - 1; j <= _y + 1; j++) {
+                for(int i = _x - 0; i <= _x + 0; i++) {
+                    for(int j = _y - 0; j <= _y + 0; j++) {
                         if(!IsInBounds(i, j)) continue;
                         switch(elementToSpawn) {
-                        case -1:
-                            grid[i, j] = new EmptyCell(i, j, this);
-                            break;
-                        case 0:
-                            grid[i, j] = new Stone(i, j, this);
-                            break;
-                        case 1:
-                            grid[i, j] = new Sand(i, j, this);
-                            break;
-                        case 2:
-                            grid[i, j] = new Dirt(i, j, this);
-                            break;
-                        case 3:
-                            grid[i, j] = new Water(i, j, this);
-                            break;
-                        case 4:
-                            grid[i, j] = new Oil(i, j, this);
-                            break;
-                        default:
-                            grid[i, j] = new Stone(i, j, this);
-                            break;
-                    }
+                            case -1:
+                                grid[i, j] = new EmptyCell(i, j, this);
+                                break;
+                            case 0:
+                                grid[i, j] = new Stone(i, j, this);
+                                break;
+                            case 1:
+                                grid[i, j] = new Sand(i, j, this);
+                                break;
+                            case 2:
+                                grid[i, j] = new Dirt(i, j, this);
+                                break;
+                            case 3:
+                                grid[i, j] = new Water(i, j, this);
+                                break;
+                            case 4:
+                                grid[i, j] = new Oil(i, j, this);
+                                break;
+                            default:
+                                grid[i, j] = new Stone(i, j, this);
+                                break;
+                        }
                     }
                 }
             }
@@ -103,6 +120,7 @@ public class PixelGrid : MonoBehaviour
 
     // Runs at a fixed rate, regardless of framerate
     void FixedUpdate() {
+        if (isPaused) return;
         IterateSteps();
     }
 

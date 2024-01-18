@@ -19,26 +19,32 @@ public abstract class Liquid : Element {
         this.grid = grid;
     }
 
-    public override void step(PixelGrid grid)
-    {
-        if(hasStepped) return; // Prevents cells from running twice in the same step
-        hasStepped = true;
+    public override void step(PixelGrid grid) {
+        // if(hasStepped) return; // Prevents cells from running twice in the same step
+        // hasStepped = true;
 
-        if(CanMakeMove(0, 1)) { // Down
-            SwapPixel(grid, grid.grid[pixelX, pixelY], grid.grid[pixelX, pixelY+1]);
-        }
-        else if(CanMakeMove(-1, 1)) { // DownLeft
-            SwapPixel(grid, grid.grid[pixelX, pixelY], grid.grid[pixelX-1, pixelY+1]);
-        }
-        else if(CanMakeMove(1, 1)) { // DownRight
-            SwapPixel(grid, grid.grid[pixelX, pixelY], grid.grid[pixelX+1, pixelY+1]);
-        }
-        else if(TryDispersion(moveDirection * dispersionRate, 0) != 31415) { // Right or Left, depending on moveDirection (defaults to left)
-            int temp = TryDispersion(moveDirection * dispersionRate, 0);
-            SwapPixel(grid, grid.grid[pixelX, pixelY], grid.grid[pixelX+temp, pixelY]);
-        }
-        else { // Changes horizontal move direction when it can't move horizontally... This is implemented so liquid continues to flow the same direction until obstructed, then changes direction
-            moveDirection = -moveDirection;
-        }
+        // if(CanMakeMove(0, 1)) { // Down
+        //     SwapPixel(grid, grid.grid[pixelX, pixelY], grid.grid[pixelX, pixelY+1]);
+        // }
+        // else if(CanMakeMove(-1, 1)) { // DownLeft
+        //     SwapPixel(grid, grid.grid[pixelX, pixelY], grid.grid[pixelX-1, pixelY+1]);
+        // }
+        // else if(CanMakeMove(1, 1)) { // DownRight
+        //     SwapPixel(grid, grid.grid[pixelX, pixelY], grid.grid[pixelX+1, pixelY+1]);
+        // }
+        // // else if(TryDispersion(moveDirection * dispersionRate, 0) != 31415) { // Right or Left, depending on moveDirection (defaults to left)
+        // //     int temp = TryDispersion(moveDirection * dispersionRate, 0);
+        // //     SwapPixel(grid, grid.grid[pixelX, pixelY], grid.grid[pixelX+temp, pixelY]);
+        // // }
+        // else if(CanMakeMove(moveDirection, 0)) { // Right or Left, depending on moveDirection (defaults to left)
+        //     SwapPixel(grid, grid.grid[pixelX, pixelY], grid.grid[pixelX+moveDirection, pixelY]);
+        // }
+        // else { // Changes horizontal move direction when it can't move horizontally... This is implemented so liquid continues to flow the same direction until obstructed, then changes direction
+        //     moveDirection = -moveDirection;
+        // }
     }
+
+    //protected override bool actOnNeighboringElement(Element neighbor, int modifiedMatrixX, int modifiedMatrixY, PixelGrid grid, bool isFinal, bool isFirst, UnityEngine.Vector2 lastValidLocation, int depth) {
+    //    return false;
+    //}
 }

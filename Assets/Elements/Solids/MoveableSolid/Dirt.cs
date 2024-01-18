@@ -7,6 +7,8 @@ public class Dirt : MoveableSolid {
         elementType = ElementType.DIRT;
         color = _color;
         density = 5f;
+        frictionFactor = 0.8f;
+        bounciness = 0;
     }
 
 }

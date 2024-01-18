@@ -7,6 +7,8 @@ public class Sand : MoveableSolid {
         elementType = ElementType.SAND;
         color = _color;
         density = 3f;
+        frictionFactor = 0.9f;
+        bounciness = 0;
     }
 
 }
