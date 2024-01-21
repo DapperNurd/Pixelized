@@ -4,27 +4,29 @@ using UnityEngine;
 
 public class PixelGrid : MonoBehaviour
 {
-
-    public static int gridWidth = 160*2;
-    public static int gridHeight = 95*2;
+    public static int gridWidth = 320;
+    public static int gridHeight = 180;
     // public static int gridWidth = 6;
     // public static int gridHeight = 4;
 
+    public int radius = 2;
     public bool isPaused = false;
 
-    int currentElement = 0; // temporary
+    public GameObject cursor;
 
-    [SerializeField]
-    public Element[,] grid;
+    private int currentElement = 0; // temporary
+
+    private Element[,] grid; // This is private because it should be access via other functions
+
+    private int stepCount;
 
     void Awake() {
-        grid = Element.CreateAndFillGrid(gridWidth, gridHeight, this); // Fills the initial grid with empty cells
-
-        Debug.Log("Sand"); // This is just for my own brain lol, temporary
+        InitializeGrid(); // Fills the initial grid with empty cells
+        stepCount = 0;
     }
 
     // Debug function, just prints out the grid in the console with the numeric types of each element... only really useful for small grids and when the rendering isnt working
-    void DisplayPsuedoGrid() {
+    void PrintPsuedoGrid() {
         string output = "[";
         for(int y = 0; y < gridHeight; y++) {
             for(int x = 0; x < gridWidth; x++) {
@@ -35,81 +37,82 @@ public class PixelGrid : MonoBehaviour
         Debug.Log(output);
     }
 
-    void FillGrid() {
-        for(int y = 0; y < gridHeight; y++) {
-            for(int x = 0; x < gridWidth; x++) {
-                grid[x, y] = new EmptyCell(x, y, this);
-            }
-        }
-    }
-
     // Runs once every frame
     void Update() {
 
         // More temporary stuff for testing... Selecting element and placing on grid
         if(Input.GetKeyDown(KeyCode.Alpha1)) {
             currentElement = 0;
-            Debug.Log("Stone");
         }
         else if(Input.GetKeyDown(KeyCode.Alpha2)) {
             currentElement = 1;
-            Debug.Log("Sand");
         }
         else if(Input.GetKeyDown(KeyCode.Alpha3)) {
             currentElement = 2;
-            Debug.Log("Dirt");
         }
         else if(Input.GetKeyDown(KeyCode.Alpha4)) {
             currentElement = 3;
-            Debug.Log("Water");
         }
         else if(Input.GetKeyDown(KeyCode.Alpha5)) {
             currentElement = 4;
-            Debug.Log("Oil");
         }
         else if(Input.GetKeyDown(KeyCode.Alpha6)) {
             currentElement = 5;
-            Debug.Log("N/A = Sand");
         }
         else if(Input.GetKeyDown(KeyCode.R)) {
-            FillGrid();
+            FillGrid(this, ElementType.EMPTYCELL);
             isPaused = true;
         }
         else if(Input.GetKeyDown(KeyCode.Space)) {
             isPaused = !isPaused;
         }
 
-        float mouseX = Input.mousePosition.x/Screen.width;
-        float mouseY = Input.mousePosition.y/Screen.height;
-        if(mouseX > 0 && mouseX < 1 && mouseY > 0 && mouseY < 1) {
+        int mouseX = Mathf.RoundToInt(Input.mousePosition.x/Screen.width * gridWidth);
+        int mouseY = gridHeight - Mathf.RoundToInt(Input.mousePosition.y/Screen.height * gridHeight);
+
+        int scroll = (int)(Input.GetAxis("Mouse ScrollWheel")*15); // Will be (positive or negative) 1, 3, or 4 depending on scroll speed (ScrollWheel axis returns 0.1, 0.2, or 0.3)
+        if (scroll != 0) {
+            radius += scroll; 
+            if(radius < 0) radius = 0; // Keeps it greater or equal to zero
+            cursor.transform.localScale = (Vector2.one * 2 * radius) + Vector2.one;
+        }
+        if (!isPaused) cursor.transform.position = new Vector3(mouseX-0.5f, -mouseY+0.5f, -5);
+
+        if (IsInBounds(mouseX, mouseY)) {
             if(Input.GetMouseButton(0) || Input.GetMouseButton(1)) {
                 int elementToSpawn = Input.GetMouseButton(1) ? -1 : currentElement;
-                int _x = (int)Mathf.Floor(mouseX*gridWidth);
-                int _y = (int)(gridHeight-Mathf.Floor(mouseY*gridHeight));
-                for(int i = _x - 0; i <= _x + 0; i++) {
-                    for(int j = _y - 0; j <= _y + 0; j++) {
-                        if(!IsInBounds(i, j)) continue;
-                        switch(elementToSpawn) {
+                for(int x = mouseX - radius; x <= mouseX + radius; x++) {
+                    for(int y = mouseY - radius; y <= mouseY + radius; y++) {
+                        if(!IsInBounds(x, y)) continue;
+                        Element elementAtMouse = GetPixel(x, y);
+                        switch (elementToSpawn) {
                             case -1:
-                                grid[i, j] = new EmptyCell(i, j, this);
+                                if (elementAtMouse is EmptyCell) continue;
+                                SetPixel(x, y, new EmptyCell(x, y, this));
                                 break;
                             case 0:
-                                grid[i, j] = new Stone(i, j, this);
+                                if (elementAtMouse is Stone) continue;
+                                SetPixel(x, y, new Stone(x, y, this));
                                 break;
                             case 1:
-                                grid[i, j] = new Sand(i, j, this);
+                                if (elementAtMouse is Sand) continue;
+                                SetPixel(x, y, new Sand(x, y, this));
                                 break;
                             case 2:
-                                grid[i, j] = new Dirt(i, j, this);
+                                if (elementAtMouse is Dirt) continue;
+                                SetPixel(x, y, new Dirt(x, y, this));
                                 break;
                             case 3:
-                                grid[i, j] = new Water(i, j, this);
+                                if (elementAtMouse is Water) continue;
+                                SetPixel(x, y, new Water(x, y, this));
                                 break;
                             case 4:
-                                grid[i, j] = new Oil(i, j, this);
+                                if (elementAtMouse is Oil) continue;
+                                SetPixel(x, y, new Oil(x, y, this));
                                 break;
                             default:
-                                grid[i, j] = new Stone(i, j, this);
+                                if (elementAtMouse is Stone) continue;
+                                SetPixel(x, y, new Stone(x, y, this));
                                 break;
                         }
                     }
@@ -118,36 +121,82 @@ public class PixelGrid : MonoBehaviour
         }
     }
 
-    // Runs at a fixed rate, regardless of framerate
+    // Runs at a fixed rate, regardless of framerate... Defined in Unity Settings (default is 0.02, or 50 times a second).
     void FixedUpdate() {
         if (isPaused) return;
         IterateSteps();
     }
 
-    // Sets a given pixel to a given element in the grid
+    /// <summary>
+    /// Runs through the entire grid of pixels (Elements) and executes their respective step() function. Then runs through it again and disables all pixels' hasStepped property
+    /// </summary>
+    void IterateSteps() {
+        stepCount = (stepCount + 1) % 60; // Increases, loops back to 0 once reached 60
+        bool evenFrame = (stepCount % 2 == 0); // We are using stepCount instead of unity's frameCount because this is ran in FixedUpdate
+        for (int y = gridHeight-1; y >= 0; y--) { // Starts at the gridHeight and decreases so it runs from bottom to top (Needed for the simulation)
+            for (int x = evenFrame ? 0 : gridWidth - 1; evenFrame ? x < gridWidth : x > 0; x += evenFrame ? 1 : -1) { // This ugly mess alternates the direction of column based on frame count... this ensures better randomness for movement like flowing liquids
+                GetPixel(x, y).step(this);
+            }
+        }
+        for(int y = 0; y < gridHeight; y++) { // Loops through all pixels, order doesnt matter... resets the hasStepped flag... might be a better way to do this
+            for(int x = 0; x < gridWidth; x++) {
+                GetPixel(x, y).hasStepped = false;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Checks and returns whether or not the provided coordinates are within the bounds of the grid's width and height
+    /// </summary>
+    /// <param name="x">The x coordinate to check</param>
+    /// <param name="y">the y coordinate to check</param>
+    /// <returns>bool: if the position is in bounds</returns>
+    public static bool IsInBounds(int x, int y) {
+        return x < gridWidth && x >= 0 && y < gridHeight && y >= 0;
+    }
+
+    /// <summary>
+    /// Gets the pixel located at the given coordinates in the grid
+    /// </summary>
+    /// <param name="x"></param>
+    /// <param name="y"></param>
+    /// <returns>The element found at the coordinates, or null if out of bounds</returns>
+    public Element GetPixel(int x, int y) {
+        if (!IsInBounds(x, y)) return null;
+        return grid[x, y];
+    }
+
+    /// <summary>
+    /// Sets the pixel at the given coordinates
+    /// </summary>
+    /// <param name="x">The x coordinate to check</param>
+    /// <param name="y">The y coordinate to check</param>
+    /// <param name="element">The element to put in place</param>
     public void SetPixel(int x, int y, Element element) {
+        if (!IsInBounds(x, y)) return;
         grid[x, y] = element;
         element.pixelX = x;
         element.pixelY = y;
     }
 
-    // Runs through the entire grid of Elements and executes their respective step() function
-    void IterateSteps() {
-        for(int y = gridHeight-1; y >= 0; y--) { // Starts at the gridHeight and decreases so it runs from bottom to top (Needed for the simulation)
-            for (int x = (UnityEngine.Time.frameCount % 2 == 0) ? 0 : gridWidth - 1; (UnityEngine.Time.frameCount % 2 == 0) ? x < gridWidth : x >= 0; x += (UnityEngine.Time.frameCount % 2 == 0) ? 1 : -1) { // This ugly mess alternates the direction of column based on frame count... this ensures better randomness for movement like flowing liquids
-                grid[x, y].step(this);
-            }
-        }
-        for(int y = 0; y < gridHeight; y++) { // Loops through all pixels, order doesnt matter... resets the hasStepped flag... might be a better way to do this
-            for(int x = 0; x < gridWidth; x++) {
-                grid[x, y].hasStepped = false;
+    /// <summary>
+    /// Fills the given PixelGrid's grid with objects corresponding to the given ElementType
+    /// </summary>
+    /// <param name="pixelGrid">The PixelGrid object whose grid property is to be filled</param>
+    /// <param name="elementType">The type of of the element to fill the grid with</param>
+    public static void FillGrid(PixelGrid pixelGrid, ElementType elementType) {
+        for (int y = 0; y < gridHeight; y++) {
+            for (int x = 0; x < gridWidth; x++) {
+                pixelGrid.grid[x, y] = Element.CreateElement(elementType, x, y, pixelGrid);
             }
         }
     }
 
-    // Checks if a given pixel (coord) is inside the grid
-    public static bool IsInBounds(int x, int y) {
-        return x < gridWidth && x >= 0 && y < gridHeight && y >= 0;
+    /// <summary>
+    /// Initializes this objects grid property, and fills it with empty cells
+    /// </summary>
+    public void InitializeGrid() {
+        this.grid = new Element[gridWidth, gridHeight];
+        FillGrid(this, ElementType.EMPTYCELL);
     }
-
 }

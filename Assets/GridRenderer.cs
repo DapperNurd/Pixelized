@@ -31,7 +31,7 @@ public class GridRenderer : MonoBehaviour
     void RenderGrid() {
         for(int y = 0; y < height; y++) {
             for(int x = 0; x < width; x++) {
-                texture.SetPixel(x, y, grid.grid[x,y].color);
+                texture.SetPixel(x, y, grid.GetPixel(x, y).color);
             }
         }
         texture.Apply();

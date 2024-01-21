@@ -1,26 +1,42 @@
 using System;
+using System.Collections.Generic;
+using System.Security.Cryptography;
 
 public enum ElementType
 {
+    // IMPORTANT!!!
+    // When adding a new ElementType, also create a dictionary reference at the beginning of the Element class (below)!!
+
     // EMPTY
     EMPTYCELL,
 
     // SOLIDS
-    //   Notes for solids:
-    //    - density should always be above 1
-    STONE,
-    SAND,
-    DIRT,
+    STONE, SAND, DIRT,
 
     // LIQUIDS
-    WATER,
-    OIL,
+    WATER, OIL,
 
     // GASSES
 }
 
 public abstract class Element
 {
+    public static Dictionary<ElementType, Type> elementTypes = new Dictionary<ElementType, Type> {
+        { ElementType.EMPTYCELL, typeof(EmptyCell) },
+        { ElementType.STONE, typeof(Stone) },
+        { ElementType.SAND, typeof(Sand) },
+        { ElementType.DIRT, typeof(Dirt) },
+        { ElementType.WATER, typeof(Water) },
+        { ElementType.OIL, typeof(Oil) },
+    };
+
+    public static Element CreateElement(ElementType element, int x, int y, PixelGrid grid) {
+        if (Element.elementTypes.TryGetValue(element, out var elementType)) {
+            return (Element)Activator.CreateInstance(elementType, new object[] { x, y, grid });
+        }
+        throw new ArgumentOutOfRangeException("element");
+    }
+
     // Variables for Element properties
     public ElementType elementType;
     public int pixelX;
@@ -32,29 +48,12 @@ public abstract class Element
     public float frictionFactor;
     public float bounciness;
     public bool isSolid;
-    public bool isFalling = true;
-
-    public float xThreshold = 0;
-    public float yThreshold = 0;
+    public bool isMoving = true;
 
     // Variables for simulation
-    public static UnityEngine.Vector2 gravity = new UnityEngine.Vector2(0, 3); // Note: Vertical movement is inverted... positive is downwards
+    public static UnityEngine.Vector2 gravity = new UnityEngine.Vector2(0, 10); // Note: Vertical movement is inverted... positive is downwards
     public PixelGrid grid;
     public bool hasStepped;
-
-    // This function is static -> Used by the class, not by an object
-    // Creates a 2D array of type Element with sizes inputted into parameters, returns the array filled with EmptyCell Elements
-    public static Element[,] CreateAndFillGrid(int width, int height, PixelGrid grid) {
-        Element[,] tempGrid = new Element[width, height];
-
-        for(int y = 0; y < height; y++) {
-            for(int x = 0; x < width; x++) {
-                tempGrid[x, y] = (y < height-8) ? new EmptyCell(x, y, grid) : new Stone(x, y, grid);
-            }
-        }
-
-        return tempGrid;
-    }
 
     public void SwapPixel(PixelGrid grid, Element element1, Element element2) {
         int x = element1.pixelX, 
@@ -63,37 +62,71 @@ public abstract class Element
         grid.SetPixel(x, y, element2);
     }
 
-    // Checks if pixel at given offset from current pixel can (should) be swapped with current pixel (or null if pixel DNE)
-    // HORIZONTAL: left is negative, right is positive
-    // VERTICAL: down is positive, up is negative
+    /// <summary>
+    /// Checks if pixel at given offset from current pixel can (should) be swapped with current pixel
+    /// </summary>
+    /// <param name="horizontalOffset">Offset from cell's x position. -left, +right</param>
+    /// <param name="verticalOffset">Offset from cell's y position. -up, +down</param>
+    /// <returns>bool: whether or not this cell can move to the position of itself plus the given offsets</returns>
     public virtual bool CanMakeMove(int horizontalOffset, int verticalOffset) {
         int verticalDir = pixelY+verticalOffset;
         int horizontalDir = pixelX+horizontalOffset;
 
-        if(!PixelGrid.IsInBounds(horizontalDir, verticalDir)) return false;
+        Element targetCell = grid.GetPixel(horizontalDir, verticalDir);
 
-        if(grid.grid[horizontalDir, verticalDir].elementType == ElementType.EMPTYCELL) return true;
+        if (targetCell == null) return false; // Is null if out of bounds
+        if(isSolid && targetCell.isSolid) return false; // If target pos is an empty cell and this cell is an empty cell, cannot move
 
-        if(isSolid && grid.grid[horizontalDir, verticalDir].isSolid) return false;
-        return (grid.grid[horizontalDir, verticalDir].density > density && verticalDir < pixelY) || 
-                (grid.grid[horizontalDir, verticalDir].density < density && verticalDir >= pixelY);
+        if (targetCell.elementType == ElementType.EMPTYCELL) return true; // If target pos is an empty cell, can move
+
+        return (targetCell.density > density && verticalDir < pixelY) || (targetCell.density < density && verticalDir >= pixelY); // If the density of target pos is higher than this cell and is below it (or vice versa), can move (swap)
     }
 
-    // I really  don't like this function lol but idk how else to do it
-    // public virtual int TryDispersion(int horizontalOffset, int verticalOffset) {
-    //     int verticalDir = pixelY+verticalOffset;
-    //     int moveDirection = (horizontalOffset > 0) ? 1 : -1;
-    //     for(int i = 1; i <= Mathf.Abs(horizontalOffset); i++) {
-    //         int horizontalDir = pixelX+(i*moveDirection);
-    //         if (
-    //             (PixelGrid.IsInBounds(horizontalDir, verticalDir)) &&
-    //             ((grid.grid[horizontalDir, verticalDir].density > density && verticalDir < pixelY) || (grid.grid[horizontalDir, verticalDir].density < density && verticalDir >= pixelY)) == true
-    //         ) continue;
-    //         if(i == 1) return 31415; // I hate this but I can't think of a better way... basically returning false, or a number that will never be normally calculated
-    //         return (i-1)*moveDirection;
-    //     }
-    //     return horizontalOffset;
-    // }
+    public Element GetPixelByOffset(int xOffset, int yOffset) {
+        if (!PixelGrid.IsInBounds(pixelX + xOffset, pixelY + yOffset)) return null;
+        return grid.GetPixel(pixelX + xOffset, pixelY + yOffset);
+    }
+
+    public Element[] GetAllNeighbors() {
+        Element[] neighbors = new Element[8];
+        int index = 0;
+        for(int y = -1; y <= 1; y++) {
+            for (int x = -1; x <= 1; x++) {
+                if (y == 0 && x == 0) continue; // Skips this cell
+                neighbors[index++] = GetPixelByOffset(x, y);
+            }
+        }
+        return neighbors;
+    }
+
+    public Element[] GetHorizontalNeighbors() {
+        Element[] neighbors = new Element[2];
+        int index = 0;
+        for (int x = -1; x <= 1; x++) {
+            neighbors[index++] = GetPixelByOffset(x, 0);
+        }
+        return neighbors;
+    }
+
+    public Element[] GetVerticalNeighbors() {
+        Element[] neighbors = new Element[2];
+        int index = 0;
+        for (int y = 1; y >= -1; y--) { // Decreasing so it goes in a downward direction in the grid... probably doesn't matter
+            neighbors[index++] = GetPixelByOffset(0, y);
+        }
+        return neighbors;
+    }
+
+    public Element[] GetDiagonalNeighbors() { // Probably won't ever need this lol
+        Element[] neighbors = new Element[4];
+        int index = 0;
+        for (int y = -1; y <= 1; y+=2) {
+            for (int x = -1; x <= 1; x+=2) {
+                neighbors[index++] = GetPixelByOffset(x, y);
+            }
+        }
+        return neighbors;
+    }
 
     public abstract void step(PixelGrid grid);
     //protected abstract bool actOnNeighboringElement(Element neighbor, int modifiedMatrixX, int modifiedMatrixY, PixelGrid grid, bool isFinal, bool isFirst, UnityEngine.Vector2 lastValidLocation, int depth);
