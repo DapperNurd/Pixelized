@@ -9,6 +9,13 @@ public class GridRenderer : MonoBehaviour
 
     PixelGrid grid;
 
+    public bool drawModeDebug = false;
+    public enum DrawBy {
+        isMoving,
+        velocity,
+    }
+    public DrawBy debugMode;
+
     void Start()
     {
         texture = new Texture2D(width, height);
@@ -31,9 +38,30 @@ public class GridRenderer : MonoBehaviour
     void RenderGrid() {
         for(int y = 0; y < height; y++) {
             for(int x = 0; x < width; x++) {
-                texture.SetPixel(x, y, grid.GetPixel(x, y).color);
+                UnityEngine.Color colorToDraw = grid.GetPixel(x, y).color;
+                if (drawModeDebug) {
+                    colorToDraw = GetColorToDraw(grid.GetPixel(x, y));
+                }
+                texture.SetPixel(x, y, colorToDraw);
             }
         }
         texture.Apply();
+    }
+
+    private Color GetColorToDraw(Element element) {
+        switch(debugMode) {
+            case DrawBy.isMoving:
+                if (element.elementType == ElementType.EMPTYCELL || element is ImmoveableSolid) return element.color;
+                return element.isMoving ? Color.red : Color.blue;
+                break;
+            case DrawBy.velocity:
+                if (element.elementType == ElementType.EMPTYCELL || element is ImmoveableSolid) return element.color;
+                return new Color(element.velocity.normalized.x, element.velocity.normalized.y, 0);
+                break;
+            default:
+                Debug.LogError("ERROR ON DEBUG COLOR GETTING!!");
+                return Color.cyan;
+                break;
+        }
     }
 }

@@ -49,6 +49,7 @@ public abstract class Element
     public float bounciness;
     public bool isSolid;
     public bool isMoving = true;
+    public float inertiaResistance;
 
     // Variables for simulation
     public static UnityEngine.Vector2 gravity = new UnityEngine.Vector2(0, 10); // Note: Vertical movement is inverted... positive is downwards
@@ -102,7 +103,7 @@ public abstract class Element
     public Element[] GetHorizontalNeighbors() {
         Element[] neighbors = new Element[2];
         int index = 0;
-        for (int x = -1; x <= 1; x++) {
+        for (int x = -1; x <= 1; x+=2) {
             neighbors[index++] = GetPixelByOffset(x, 0);
         }
         return neighbors;
@@ -111,7 +112,7 @@ public abstract class Element
     public Element[] GetVerticalNeighbors() {
         Element[] neighbors = new Element[2];
         int index = 0;
-        for (int y = 1; y >= -1; y--) { // Decreasing so it goes in a downward direction in the grid... probably doesn't matter
+        for (int y = 1; y >= -1; y-=2) { // Decreasing so it goes in a downward direction in the grid... probably doesn't matter
             neighbors[index++] = GetPixelByOffset(0, y);
         }
         return neighbors;

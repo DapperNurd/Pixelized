@@ -1,12 +1,10 @@
 using JetBrains.Annotations;
+using System;
 using System.IO.IsolatedStorage;
 using Unity.VisualScripting;
 using UnityEngine;
-using static UnityEngine.RuleTile.TilingRuleOutput;
 
 public abstract class MoveableSolid : Element {
-
-    public float inertiaResistance;
 
     protected MoveableSolid(int x, int y, PixelGrid grid) {
         // Variables for Element properties
@@ -24,40 +22,57 @@ public abstract class MoveableSolid : Element {
 
         velocity = Vector2.ClampMagnitude(velocity + (gravity * Time.deltaTime), 10f); // Adds gravity to velocity, clamps it to be between -10f and 10f
 
-        if (PixelGrid.IsInBounds(pixelX, pixelY + 1)) {
-            if(GetPixelByOffset(0, 1) is MoveableSolid || GetPixelByOffset(0, 1) is ImmoveableSolid) {
+        Element cellBelow = GetPixelByOffset(0, 1);
+        if(cellBelow != null) {
+            if (GetPixelByOffset(0, 1) is MoveableSolid || GetPixelByOffset(0, 1) is ImmoveableSolid) {
+                if (!isMoving) return;
                 velocity.y /= 2f;
             }
-            else if (!isMoving) isMoving = true;
+            else { // If cell below is Liquid, Gas, Empty, or anything but solid
+                isMoving = true;
+            }
         }
 
-        Element targetCell = CalculateVelocityTravel();
+        Tuple<Element, Element> targetedPositions = CalculateVelocityTravel();
+        // Item1 <- last empty cell that the velocity path found on calculation
+        // Item2 <- first non-empty cell that the path found (basically, what this cell hit when trying to move)
 
-        int randomDirection = Random.Range(0, 2)*2 - 1; // Returns -1 or 1 randomly
+        int randomDirection = UnityEngine.Random.Range(0, 2)*2 - 1; // Returns -1 or 1 randomly
         //int randomDirection = pixelX%2==0 ? 1 : -1; // Returns -1 or 1 whether the pixelX count is even or odd
         // Possible TODO: Add a hasNotMoved bool or something similar, make it so at the beginning of step it checks for this and checks for an empty cell below...
         ///// If it has not moved and the below cell is not empty (or liquid i guess) then just return and skip any processing
-        if (targetCell != this) { // Basically, if the cell is moving (targetCell is not itself)
-            SwapPixel(grid, this, targetCell);
-            velocity.x *= frictionFactor * targetCell.frictionFactor; // Apply friction forces on velocity.x ... probably needs tweaking
+        if (targetedPositions.Item1 != this) { // Basically, if the pixel is moving (targetCell is not itself)
+            SwapPixel(grid, this, targetedPositions.Item1);
+            if(targetedPositions.Item2 != null) { // If it was stopped by something
+                velocity.x = velocity.y * System.Math.Sign(velocity.x);
+            }
+            velocity.x *= frictionFactor * targetedPositions.Item1.frictionFactor; // Apply friction forces on velocity.x ... probably needs tweaking
         }
-        else if (velocity.x != 0) velocity.x = -velocity.x; // If it has not moved but still has horizontal velocity (so like if it is stopped by a wall), flip velocity.x
-        //else if (isMoving) {
-            if (Random.Range(0, 1f) < inertiaResistance) {
+        else { // If the pixel has not moved
+            if (Mathf.Abs(velocity.x) >= 1) { // Despite not moving, the pixel still has horizontal velocity (something blocked it probably... might check if its Abs() is >= 1)
+                velocity.x = -velocity.x;
+                velocity.x *= frictionFactor * targetedPositions.Item1.frictionFactor;
+                return;
+            }
+            //else if (isMoving) {
+            if (UnityEngine.Random.Range(0, 1f) < inertiaResistance) {
                 isMoving = false;
                 return;
             }
-            if (CanMakeMove(randomDirection, 1)) {
+            else if (CanMakeMove(randomDirection, 1)) {
                 SwapPixel(grid, this, GetPixelByOffset(randomDirection, 1));
-                velocity.x = randomDirection;
+                velocity.x = UnityEngine.Random.Range(0, 2) * 2 - 1;
                 velocity.y += velocity.y + (gravity.y * Time.deltaTime);
             }
             else if (CanMakeMove(-randomDirection, 1)) {
                 SwapPixel(grid, this, GetPixelByOffset(-randomDirection, 1));
-                velocity.x = -randomDirection;
+                velocity.x = -UnityEngine.Random.Range(0, 2) * 2 - 1;
                 velocity.y += velocity.y + (gravity.y * Time.deltaTime);
             }
-        //}
+            else {
+                isMoving = false;
+            }
+        }
         //else if (velocity.x != 0) { // If the cell has not moved, but has horizontal velocity
         //    if (CanMakeMove(xDirection, 1)) {
         //        SwapPixel(grid, this, GetPixelByOffset(xDirection, 1));
@@ -88,13 +103,16 @@ public abstract class MoveableSolid : Element {
         //IterateThroughSteps(velX, velY);
     }
 
-        private Element CalculateVelocityTravel() {
+    private Tuple<Element, Element> CalculateVelocityTravel() {
+
+        Element lastAvailableCell, firstUnavailableCell = null;
+
         Vector2Int lastValidPos = new(pixelX, pixelY); // Gets current position
 
         float xAbs = Mathf.Abs(velocity.x);
-        if(xAbs < 0) xAbs = 1;
+        if (xAbs < 0) xAbs = 1;
         float yAbs = Mathf.Abs(velocity.y);
-        if(yAbs < 0) yAbs = 1;
+        if (yAbs < 0) yAbs = 1;
 
         int upperBound = Mathf.Max((int)xAbs, (int)yAbs);
         int lowerBound = Mathf.Min((int)xAbs, (int)yAbs);
@@ -108,16 +126,31 @@ public abstract class MoveableSolid : Element {
             int yIncrease = (xAbs <= yAbs) ? i : smallerCount;
 
             int newX = pixelX + (xIncrease * (velocity.x < 0 ? -1 : 1)); // All of the above is basically converting velocity into a point and calculating a slope from it and traversing the slope cell by cell
-            int newY = pixelY + (yIncrease * (velocity.y < 0 ? -1 : 1)); // Kind of messy but should work
-            if (PixelGrid.IsInBounds(newX, newY)) {
-                Element targetCell = grid.GetPixel(newX, newY);
-                if(targetCell == this) continue;
-                if(targetCell.elementType != ElementType.EMPTYCELL) return grid.GetPixel(lastValidPos.x, lastValidPos.y);
-                lastValidPos = new Vector2Int(newX, newY);
+            int newY = pixelY + (yIncrease * (velocity.y < 0 ? -1 : 1)); // Kind of messy but should wor
+                                                                         // k
+            if (!PixelGrid.IsInBounds(newX, newY)) break;
+
+            Element targetCell = grid.GetPixel(newX, newY);
+
+            if (targetCell == this) continue;
+            if (targetCell.elementType != ElementType.EMPTYCELL) {
+                firstUnavailableCell = targetCell;
+                break;
             }
-            else return grid.GetPixel(lastValidPos.x, lastValidPos.y);
+            else {
+                foreach (Element neighbor in targetCell.GetHorizontalNeighbors()) {
+                    if (neighbor == null) continue;
+                    if (neighbor is MoveableSolid || neighbor is ImmoveableSolid) {
+                        neighbor.isMoving = UnityEngine.Random.Range(0, 1f) > neighbor.inertiaResistance || neighbor.isMoving;
+                    }
+                }
+            }
+            lastValidPos = new Vector2Int(newX, newY);
         }
-        return grid.GetPixel(lastValidPos.x, lastValidPos.y);
+
+        lastAvailableCell = grid.GetPixel(lastValidPos.x, lastValidPos.y);
+
+        return new Tuple<Element, Element>(lastAvailableCell, firstUnavailableCell);
     }
     //protected void IterateThroughSteps(float velX, float velY) {
     //    int xModifier = velocity.x < 0 ? -1 : 1; // Keeps track of negative or positive movement because we are getting the absolute values

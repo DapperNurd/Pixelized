@@ -8,6 +8,7 @@ public class EmptyCell : Element {
         elementType = ElementType.EMPTYCELL;
         color = UnityEngine.Color.black;
         this.grid = grid;
+        frictionFactor = 1f;
     }
 
     public override void step(PixelGrid grid)
