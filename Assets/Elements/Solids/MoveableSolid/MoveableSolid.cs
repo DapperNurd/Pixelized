@@ -26,7 +26,7 @@ public abstract class MoveableSolid : Element {
         hasStepped = true;
 
         
-        if (CheckShouldMove()) {
+        if (CanMakeMove(0,1)) {
             velocity = Vector2.ClampMagnitude(velocity + (gravity * Time.deltaTime), 10f); // Adds gravity to velocity, clamps it to be between -10f and 10f
             if (velocity.y > 0 && velocity.y < 1) velocity.y = 1f; // This basically ensures that if it just started falling, it will actually register as falling
             isMoving = true; 
@@ -36,13 +36,13 @@ public abstract class MoveableSolid : Element {
         }
 
         Tuple<Element, Element> targetedPositions = CalculateVelocityTravel();
-        // Item1 <- last empty cell that the velocity path found on calculation
-        // Item2 <- first non-empty cell that the path found (basically, what this cell hit when trying to move)
+        // Item1 <- last empty cell that the velocity path found on calculation (The cell the pixel should move to... can be self if no cell found)
+        // Item2 <- first non-empty cell that the path found (basically, what this cell hit when trying to move... is null if not stopped (or hit boundary, need to fix this))
 
         int randomDirection = UnityEngine.Random.Range(0, 2)*2 - 1; // Returns -1 or 1 randomly
         if (targetedPositions.Item1 != this) { // Basically, if the pixel is moving (targetCell is not itself)
             SwapPixel(grid, this, targetedPositions.Item1);
-            if (targetedPositions.Item2 != targetedPositions.Item1) { // If it was stopped by something
+            if (targetedPositions.Item2 != null) { // If it was stopped by something
                 velocity.x = velocity.y * System.Math.Sign(velocity.x);
             }
             velocity.x *= frictionFactor * targetedPositions.Item1.frictionFactor; // Apply friction forces on velocity.x ... probably needs tweaking
@@ -119,7 +119,6 @@ public abstract class MoveableSolid : Element {
         }
 
         lastAvailableCell = grid.GetPixel(lastValidPos.x, lastValidPos.y);
-        if(firstUnavailableCell == null) firstUnavailableCell = lastAvailableCell;
         return new Tuple<Element, Element>(lastAvailableCell, firstUnavailableCell);
     }
 

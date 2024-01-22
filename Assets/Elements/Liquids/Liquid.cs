@@ -26,23 +26,31 @@ public abstract class Liquid : Element {
         int randomDirection = UnityEngine.Random.Range(0, 2) * 2 - 1; // Returns -1 or 1 randomly
 
         if (CanMakeMove(0,1)) {
+            SwapPixel(grid, this, GetPixelByOffset(0, 1));
             velocity = Vector2.ClampMagnitude(velocity + (gravity * Time.deltaTime), 10f); // Adds gravity to velocity, clamps it to be between -10f and 10f
             if (velocity.y > 0 && velocity.y < 1) velocity.y = 1f; // This basically ensures that if it just started falling, it will actually register as falling
             isMoving = true;
         }
-        else if (CanMakeMove(randomDirection, 1) || CanMakeMove(-randomDirection, 1)) {
+        else if (CanMakeMove(randomDirection, 0)) {
+            SwapPixel(grid, this, GetPixelByOffset(randomDirection, 0));
             velocity.x = randomDirection;
+            isMoving = true;
+        }
+        else if (CanMakeMove(-randomDirection, 0))
+        {
+            SwapPixel(grid, this, GetPixelByOffset(-randomDirection, 0));
+            velocity.x = -randomDirection;
             isMoving = true;
         }
         else if (!isMoving) return;
 
         Tuple<Element, Element> targetedPositions = CalculateVelocityTravel();
-        // Item1 <- last empty cell that the velocity path found on calculation
-        // Item2 <- first non-empty cell that the path found (basically, what this cell hit when trying to move)
+        // Item1 <- last empty cell that the velocity path found on calculation (The cell the pixel should move to... can be self if no cell found)
+        // Item2 <- first non-empty cell that the path found (basically, what this cell hit when trying to move... is null if not stopped (or hit boundary, need to fix this))
 
         if (targetedPositions.Item1 != this) { // Basically, if the pixel is moving (targetCell is not itself)
             SwapPixel(grid, this, targetedPositions.Item1);
-            if (targetedPositions.Item2 != targetedPositions.Item1) {
+            if (targetedPositions.Item2 != null) {
                 velocity.x = velocity.y * viscosity * (velocity.x < 0 ? -1 : velocity.x > 0 ? 1 : randomDirection);
                 velocity.y /= 2f;
             }
@@ -93,17 +101,10 @@ public abstract class Liquid : Element {
                 firstUnavailableCell = targetCell;
                 break;
             }
-            foreach (Element neighbor in targetCell.GetHorizontalNeighbors()) {
-                if (neighbor == null) continue;
-                if (neighbor is MoveableSolid || neighbor is ImmoveableSolid) {
-                    neighbor.isMoving = UnityEngine.Random.Range(0, 1f) > neighbor.inertiaResistance || neighbor.isMoving;
-                }
-            }
             lastValidPos = new Vector2Int(newX, newY);
         }
 
         lastAvailableCell = grid.GetPixel(lastValidPos.x, lastValidPos.y);
-        if (firstUnavailableCell == null) firstUnavailableCell = lastAvailableCell;
         return new Tuple<Element, Element>(lastAvailableCell, firstUnavailableCell);
     }
 
