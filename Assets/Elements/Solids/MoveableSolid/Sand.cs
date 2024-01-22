@@ -10,7 +10,7 @@ public class Sand : MoveableSolid {
         density = 3f;
         frictionFactor = 0.75f;
         bounciness = 0;
-        inertiaResistance = 0.1f;
+        inertiaResistance = 0.15f;
     }
 
 }

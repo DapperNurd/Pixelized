@@ -1,6 +1,7 @@
 using System;
 using Unity.VisualScripting;
 using UnityEngine;
+using static UnityEngine.Rendering.DebugUI;
 
 public class PixelGrid : MonoBehaviour
 {
@@ -14,7 +15,7 @@ public class PixelGrid : MonoBehaviour
 
     public GameObject cursor;
 
-    private int currentElement = 0; // temporary
+    private ElementType elementToPlace = ElementType.STONE; // temporary
 
     private Element[,] grid; // This is private because it should be access via other functions
 
@@ -37,34 +38,27 @@ public class PixelGrid : MonoBehaviour
         Debug.Log(output);
     }
 
+    private readonly int[] keyCodes = { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+
     // Runs once every frame
     void Update() {
 
-        // More temporary stuff for testing... Selecting element and placing on grid
-        if(Input.GetKeyDown(KeyCode.Alpha1)) {
-            currentElement = 0;
-        }
-        else if(Input.GetKeyDown(KeyCode.Alpha2)) {
-            currentElement = 1;
-        }
-        else if(Input.GetKeyDown(KeyCode.Alpha3)) {
-            currentElement = 2;
-        }
-        else if(Input.GetKeyDown(KeyCode.Alpha4)) {
-            currentElement = 3;
-        }
-        else if(Input.GetKeyDown(KeyCode.Alpha5)) {
-            currentElement = 4;
-        }
-        else if(Input.GetKeyDown(KeyCode.Alpha6)) {
-            currentElement = 5;
-        }
-        else if(Input.GetKeyDown(KeyCode.R)) {
-            FillGrid(this, ElementType.EMPTYCELL);
-            isPaused = true;
-        }
-        else if(Input.GetKeyDown(KeyCode.Space)) {
-            isPaused = !isPaused;
+        if (Input.anyKeyDown) {
+            if (Input.GetKey(KeyCode.R)) {
+                FillGrid(this, ElementType.EMPTYCELL);
+                isPaused = true;
+            }
+            else if (Input.GetKey(KeyCode.Space)) {
+                isPaused = !isPaused;
+            }
+            else {
+                // KeyCode.Alpha1 = 49
+                foreach (int num in keyCodes) {
+                    if (Input.GetKey((KeyCode)(num+48))) {
+                        elementToPlace = (ElementType)num;
+                    }
+                }
+            }
         }
 
         int mouseX = Mathf.RoundToInt(Input.mousePosition.x/Screen.width * gridWidth);
@@ -80,41 +74,12 @@ public class PixelGrid : MonoBehaviour
 
         if (IsInBounds(mouseX, mouseY)) {
             if(Input.GetMouseButton(0) || Input.GetMouseButton(1)) {
-                int elementToSpawn = Input.GetMouseButton(1) ? -1 : currentElement;
+                if (Input.GetMouseButton(1)) elementToPlace = ElementType.EMPTYCELL;
                 for(int x = mouseX - radius; x <= mouseX + radius; x++) {
                     for(int y = mouseY - radius; y <= mouseY + radius; y++) {
                         if(!IsInBounds(x, y)) continue;
-                        Element elementAtMouse = GetPixel(x, y);
-                        switch (elementToSpawn) {
-                            case -1:
-                                if (elementAtMouse is EmptyCell) continue;
-                                SetPixel(x, y, new EmptyCell(x, y, this));
-                                break;
-                            case 0:
-                                if (elementAtMouse is Stone) continue;
-                                SetPixel(x, y, new Stone(x, y, this));
-                                break;
-                            case 1:
-                                if (elementAtMouse is Sand) continue;
-                                SetPixel(x, y, new Sand(x, y, this));
-                                break;
-                            case 2:
-                                if (elementAtMouse is Dirt) continue;
-                                SetPixel(x, y, new Dirt(x, y, this));
-                                break;
-                            case 3:
-                                if (elementAtMouse is Water) continue;
-                                SetPixel(x, y, new Water(x, y, this));
-                                break;
-                            case 4:
-                                if (elementAtMouse is Oil) continue;
-                                SetPixel(x, y, new Oil(x, y, this));
-                                break;
-                            default:
-                                if (elementAtMouse is Stone) continue;
-                                SetPixel(x, y, new Stone(x, y, this));
-                                break;
-                        }
+                        if (GetPixel(x, y).elementType == elementToPlace) continue;
+                        SetPixel(x, y, Element.CreateElement(elementToPlace, x, y, this));
                     }
                 }
             }
@@ -187,7 +152,7 @@ public class PixelGrid : MonoBehaviour
     public static void FillGrid(PixelGrid pixelGrid, ElementType elementType) {
         for (int y = 0; y < gridHeight; y++) {
             for (int x = 0; x < gridWidth; x++) {
-                pixelGrid.grid[x, y] = Element.CreateElement(elementType, x, y, pixelGrid);
+                pixelGrid.SetPixel(x, y, Element.CreateElement(elementType, x, y, pixelGrid));
             }
         }
     }

@@ -10,6 +10,6 @@ public class Dirt : MoveableSolid {
         density = 5f;
         frictionFactor = 0.6f;
         bounciness = 0f;
-        inertiaResistance = 0.8f;
+        inertiaResistance = 0.6f;
     }
 }

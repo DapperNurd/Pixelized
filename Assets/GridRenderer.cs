@@ -38,10 +38,8 @@ public class GridRenderer : MonoBehaviour
     void RenderGrid() {
         for(int y = 0; y < height; y++) {
             for(int x = 0; x < width; x++) {
-                UnityEngine.Color colorToDraw = grid.GetPixel(x, y).color;
-                if (drawModeDebug) {
-                    colorToDraw = GetColorToDraw(grid.GetPixel(x, y));
-                }
+                Color colorToDraw = grid.GetPixel(x, y).color;
+                if (drawModeDebug) colorToDraw = GetColorToDraw(grid.GetPixel(x, y));
                 texture.SetPixel(x, y, colorToDraw);
             }
         }
@@ -53,15 +51,14 @@ public class GridRenderer : MonoBehaviour
             case DrawBy.isMoving:
                 if (element.elementType == ElementType.EMPTYCELL || element is ImmoveableSolid) return element.color;
                 return element.isMoving ? Color.red : Color.blue;
-                break;
             case DrawBy.velocity:
-                if (element.elementType == ElementType.EMPTYCELL || element is ImmoveableSolid) return element.color;
-                return new Color(element.velocity.normalized.x, element.velocity.normalized.y, 0);
-                break;
+                if (element.elementType == ElementType.EMPTYCELL) return Color.white;
+                if (element is ImmoveableSolid) return element.color;
+                Vector2 absVel = new(Mathf.Abs(element.velocity.x), Mathf.Abs(element.velocity.y));
+                return new Color(absVel.normalized.x, absVel.normalized.y, 0);
             default:
                 Debug.LogError("ERROR ON DEBUG COLOR GETTING!!");
                 return Color.cyan;
-                break;
         }
     }
 }

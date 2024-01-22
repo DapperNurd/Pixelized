@@ -31,7 +31,7 @@ public abstract class Element
     };
 
     public static Element CreateElement(ElementType element, int x, int y, PixelGrid grid) {
-        if (Element.elementTypes.TryGetValue(element, out var elementType)) {
+        if (elementTypes.TryGetValue(element, out var elementType)) {
             return (Element)Activator.CreateInstance(elementType, new object[] { x, y, grid });
         }
         throw new ArgumentOutOfRangeException("element");
@@ -41,15 +41,16 @@ public abstract class Element
     public ElementType elementType;
     public int pixelX;
     public int pixelY;
-    public UnityEngine.Vector2 lastValidPos;
     public UnityEngine.Vector2 velocity;
+
     public UnityEngine.Color color;
+
     public float density;
     public float frictionFactor;
     public float bounciness;
-    public bool isSolid;
-    public bool isMoving = true;
     public float inertiaResistance;
+
+    public bool isMoving = true;
 
     // Variables for simulation
     public static UnityEngine.Vector2 gravity = new UnityEngine.Vector2(0, 10); // Note: Vertical movement is inverted... positive is downwards
@@ -76,7 +77,7 @@ public abstract class Element
         Element targetCell = grid.GetPixel(horizontalDir, verticalDir);
 
         if (targetCell == null) return false; // Is null if out of bounds
-        if(isSolid && targetCell.isSolid) return false; // If target pos is an empty cell and this cell is an empty cell, cannot move
+        if((this is MoveableSolid || this is ImmoveableSolid) && (targetCell is MoveableSolid || targetCell is ImmoveableSolid)) return false; // If target pos is an empty cell and this cell is an empty cell, cannot move
 
         if (targetCell.elementType == ElementType.EMPTYCELL) return true; // If target pos is an empty cell, can move
 
@@ -130,5 +131,5 @@ public abstract class Element
     }
 
     public abstract void step(PixelGrid grid);
-    //protected abstract bool actOnNeighboringElement(Element neighbor, int modifiedMatrixX, int modifiedMatrixY, PixelGrid grid, bool isFinal, bool isFirst, UnityEngine.Vector2 lastValidLocation, int depth);
+    public abstract bool CheckShouldMove();
 }
