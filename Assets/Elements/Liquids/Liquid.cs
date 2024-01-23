@@ -25,7 +25,7 @@ public abstract class Liquid : Element {
         hasStepped = true;
 
         isMoving = isMoving || CheckShouldMove(); // If isMoving is true, keep it. If not, see if it should be and set it appropriately
-        Debug.Log("isMOving: " + isMoving);
+        //Debug.Log("isMOving: " + isMoving);
         if (!isMoving) return; // If is not moving, skip this step
 
         ApplyGravity();
@@ -36,23 +36,24 @@ public abstract class Liquid : Element {
 
         //int randomDirection = UnityEngine.Random.Range(0, 2) * 2 - 1; // Returns -1 or 1 randomly
         if (targetedPositions.Item1 != this) { // Basically, if the pixel is moving (targetCell is not itself)
-            Debug.Log((pixelX - targetedPositions.Item1.pixelX) + ", " + (pixelY - targetedPositions.Item1.pixelY));
+            //Debug.Log((pixelX - targetedPositions.Item1.pixelX) + ", " + (pixelY - targetedPositions.Item1.pixelY));
             SwapPixel(grid, this, targetedPositions.Item1);
             if (targetedPositions.Item2 != null) { // If it was stopped by something
-                Debug.Log("Hit something: " + velocity.y);
+                //Debug.Log("Hit something: " + velocity.y);
                 //velocity.x = velocity.y * System.Math.Sign(velocity.x);
                 velocity.x = Mathf.Clamp(velocity.x + velocity.y * viscosity * (velocity.x < 0 ? -1 : velocity.x > 0 ? 1 : moveDirection), -10, 10f);
+                velocity.y = 0;
             }
         }
         else { // If the pixel has not moved
             if (Mathf.Abs(velocity.x) >= 1) { // Despite not moving, the pixel still has horizontal velocity (something blocked it probably... )
-                Debug.Log("changing direction... velX: " + velocity.x); // THIS IS WHERE ITS NOT WORKING I THINK
+                //Debug.Log("changing direction... velX: " + velocity.x); // THIS IS WHERE ITS NOT WORKING I THINK
                 velocity.x = -velocity.x;
                 moveDirection = -moveDirection;
                 return;
             }
 
-            Debug.Log("Did not move: " + velocity.y);
+            //Debug.Log("Did not move: " + velocity.y);
 
             if (CanMakeMove(moveDirection, 1)) {
                 SwapPixel(grid, this, GetPixelByOffset(moveDirection, 1));
