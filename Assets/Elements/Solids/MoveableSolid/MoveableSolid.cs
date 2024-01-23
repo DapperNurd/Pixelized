@@ -25,15 +25,10 @@ public abstract class MoveableSolid : Element {
         if (hasStepped) return; // Prevents cells from running twice in the same step
         hasStepped = true;
 
-        
-        if (CanMakeMove(0,1)) {
-            velocity = Vector2.ClampMagnitude(velocity + (gravity * Time.deltaTime), 10f); // Adds gravity to velocity, clamps it to be between -10f and 10f
-            if (velocity.y > 0 && velocity.y < 1) velocity.y = 1f; // This basically ensures that if it just started falling, it will actually register as falling
-            isMoving = true; 
-        }
-        else { // If cell below is Liquid, Gas, Empty, or anything but solid
-            if (!isMoving) return;
-        }
+        isMoving = isMoving || CheckShouldMove(); // If isMoving is true, keep it. If not, see if it should be and set it appropriately
+        if (!isMoving) return; // If is not moving, skip this step
+
+        ApplyGravity();
 
         Tuple<Element, Element> targetedPositions = CalculateVelocityTravel();
         // Item1 <- last empty cell that the velocity path found on calculation (The cell the pixel should move to... can be self if no cell found)
@@ -123,7 +118,6 @@ public abstract class MoveableSolid : Element {
     }
 
     public override bool CheckShouldMove() {
-        Element cellBelow = GetPixelByOffset(0, 1);
-        return !(cellBelow == null || (cellBelow is MoveableSolid && !cellBelow.isMoving) || cellBelow is ImmoveableSolid);
+        return IsMovableCell(GetPixelByOffset(0, 1));
     }
 }

@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Security.Cryptography;
+using UnityEditor.Build;
+using UnityEngine;
 
 public enum ElementType
 {
@@ -50,7 +52,7 @@ public abstract class Element
     public float bounciness;
     public float inertiaResistance;
 
-    public bool isMoving = true;
+    public bool isMoving;
 
     // Variables for simulation
     public static UnityEngine.Vector2 gravity = new UnityEngine.Vector2(0, 10); // Note: Vertical movement is inverted... positive is downwards
@@ -71,10 +73,10 @@ public abstract class Element
     /// <param name="verticalOffset">Offset from cell's y position. -up, +down</param>
     /// <returns>bool: whether or not this cell can move to the position of itself plus the given offsets</returns>
     public virtual bool CanMakeMove(int horizontalOffset, int verticalOffset) {
+        
         int verticalDir = pixelY+verticalOffset;
-        int horizontalDir = pixelX+horizontalOffset;
 
-        Element targetCell = grid.GetPixel(horizontalDir, verticalDir);
+        Element targetCell = GetPixelByOffset(horizontalOffset, verticalOffset);
 
         if (targetCell == null) return false; // Is null if out of bounds
         if((this is MoveableSolid || this is ImmoveableSolid) && (targetCell is MoveableSolid || targetCell is ImmoveableSolid)) return false; // If target pos is an empty cell and this cell is an empty cell, cannot move
@@ -128,6 +130,15 @@ public abstract class Element
             }
         }
         return neighbors;
+    }
+
+    public bool IsMovableCell(Element cellToCheck) { // This should be a PixelGrid method tbh
+        return cellToCheck != null && (cellToCheck.elementType == ElementType.EMPTYCELL || cellToCheck.isMoving);
+    }
+
+    protected void ApplyGravity() {
+        velocity = Vector2.ClampMagnitude(velocity + (gravity * Time.deltaTime), 10f); // Adds gravity to velocity, clamps it to be between -10f and 10f
+        if (velocity.y > 0 && velocity.y < 1) velocity.y = 1f; // This basically ensures that if it just started falling, it will actually register as falling
     }
 
     public abstract void step(PixelGrid grid);

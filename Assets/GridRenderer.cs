@@ -55,7 +55,7 @@ public class GridRenderer : MonoBehaviour
                 if (element.elementType == ElementType.EMPTYCELL) return Color.white;
                 if (element is ImmoveableSolid) return element.color;
                 Vector2 absVel = new(Mathf.Abs(element.velocity.x), Mathf.Abs(element.velocity.y));
-                return new Color(absVel.normalized.x, absVel.normalized.y, 0);
+                return new Color(-element.velocity.normalized.x, absVel.normalized.y, absVel.normalized.x * Mathf.Sign(element.velocity.x));
             default:
                 Debug.LogError("ERROR ON DEBUG COLOR GETTING!!");
                 return Color.cyan;

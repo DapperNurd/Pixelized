@@ -7,7 +7,7 @@ public class Oil : Liquid {
         elementType = ElementType.OIL;
         color = grey;
         density = 0.5f;
-        viscosity = 0.1f;
+        viscosity = 0.9f;
     }
 
 }

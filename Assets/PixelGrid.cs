@@ -15,14 +15,18 @@ public class PixelGrid : MonoBehaviour
 
     public GameObject cursor;
 
-    private ElementType elementToPlace = ElementType.STONE; // temporary
+    private ElementType elementToSpawn;
+    int elementToPlace = 1; // temporary
 
     private Element[,] grid; // This is private because it should be access via other functions
 
     private int stepCount;
 
+    public Element boundaryHit;
+
     void Awake() {
         InitializeGrid(); // Fills the initial grid with empty cells
+        boundaryHit = Element.CreateElement(ElementType.STONE, 0, 0, this);
         stepCount = 0;
     }
 
@@ -55,7 +59,7 @@ public class PixelGrid : MonoBehaviour
                 // KeyCode.Alpha1 = 49
                 foreach (int num in keyCodes) {
                     if (Input.GetKey((KeyCode)(num+48))) {
-                        elementToPlace = (ElementType)num;
+                        elementToPlace = num;
                     }
                 }
             }
@@ -74,12 +78,12 @@ public class PixelGrid : MonoBehaviour
 
         if (IsInBounds(mouseX, mouseY)) {
             if(Input.GetMouseButton(0) || Input.GetMouseButton(1)) {
-                if (Input.GetMouseButton(1)) elementToPlace = ElementType.EMPTYCELL;
+                elementToSpawn = Input.GetMouseButton(1) ? ElementType.EMPTYCELL : (ElementType)elementToPlace;
                 for(int x = mouseX - radius; x <= mouseX + radius; x++) {
                     for(int y = mouseY - radius; y <= mouseY + radius; y++) {
                         if(!IsInBounds(x, y)) continue;
-                        if (GetPixel(x, y).elementType == elementToPlace) continue;
-                        SetPixel(x, y, Element.CreateElement(elementToPlace, x, y, this));
+                        if (GetPixel(x, y).elementType == elementToSpawn) continue;
+                        SetPixel(x, y, Element.CreateElement(elementToSpawn, x, y, this));
                     }
                 }
             }

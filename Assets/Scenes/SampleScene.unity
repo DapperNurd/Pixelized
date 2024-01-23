@@ -375,7 +375,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 20b79d70c8cc45e48868c2c73fe7bbb4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  drawModeDebug: 0
+  drawModeDebug: 1
   debugMode: 0
 --- !u!64 &1087845555
 MeshCollider:
