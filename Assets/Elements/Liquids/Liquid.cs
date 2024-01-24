@@ -31,7 +31,7 @@ public abstract class Liquid : Element {
         color = Color.blue;
         ApplyGravity();
 
-        Tuple<Element, Element> targetedPositions = CalculateVelocityTravel();
+        Element[] targetedPositions = CalculateVelocityTravel();
         // Item1 <- last empty cell that the velocity path found on calculation (The cell the pixel should move to... can be self if no cell found)
         // Item2 <- first non-empty cell that the path found (basically, what this cell hit when trying to move... is null if not stopped (or hit boundary, need to fix this))
 
@@ -40,7 +40,7 @@ public abstract class Liquid : Element {
         Debug.DrawLine(new(pixelX, -pixelY, 0), new(pixelX + velocity.x, -pixelY - velocity.y, 0), Color.red, 0, false);
 
         //int randomDirection = UnityEngine.Random.Range(0, 2) * 2 - 1; // Returns -1 or 1 randomly
-        if (targetedPositions.Item2 != null/* && !targetedPositions.Item2.isMoving*/) { // If it was stopped by something
+        if (targetedPositions[1] != null/* && !targetedPositions.Item2.isMoving*/) { // If it was stopped by something
             //Debug.Log("Hit something: " + velocity.y);
             //velocity.x = velocity.y * System.Math.Sign(velocity.x);
             //velocity.x = Mathf.Clamp(velocity.x + velocity.y * viscosity * (velocity.x < 0 ? -1 : velocity.x > 0 ? 1 : moveDirection), -10, 10f);
@@ -58,14 +58,14 @@ public abstract class Liquid : Element {
             velocity.x = newX;
             velocity.y = newY;
         }
-        if (targetedPositions.Item1 != this) { // Basically, if the pixel is moving (targetCell is not itself)
+        if (targetedPositions[0] != this) { // Basically, if the pixel is moving (targetCell is not itself)
             //Debug.Log((pixelX - targetedPositions.Item1.pixelX) + ", " + (pixelY - targetedPositions.Item1.pixelY));
-            SwapPixel(grid, this, targetedPositions.Item1);
+            SwapPixel(grid, this, targetedPositions[0]);
             
         }
         else { // If the pixel has not moved
             //color = moveDirection == 1 ? Color.red : Color.blue;
-            if (Mathf.Abs(velocity.x) >= 1 && !IsMovableCell(GetPixelByOffset((int)velocity.x, 0))) { // Despite not moving, the pixel still has horizontal velocity (something blocked it probably... )
+            if (targetedPositions[1] != null && Mathf.Abs(velocity.x) >= 1 && !IsMovableCell(GetPixelByOffset((int)velocity.x, 0))) { // Despite not moving, the pixel still has horizontal velocity (something blocked it probably... )
                 //Debug.Log("changing direction... velX: " + velocity.x); // THIS IS WHERE ITS NOT WORKING I THINK
                 velocity.x = -velocity.x;
                 moveDirection = -moveDirection;
@@ -158,9 +158,11 @@ public abstract class Liquid : Element {
         //}
     }
 
-    private Tuple<Element, Element> CalculateVelocityTravel() {
+    private Element[] CalculateVelocityTravel() {
 
-        Element lastAvailableCell, firstUnavailableCell = null;
+        Element[] returnArray = { this, null };
+
+        //Element lastAvailableCell, firstUnavailableCell = null;
 
         Vector2Int lastValidPos = new(pixelX, pixelY); // Gets current position
 
@@ -184,7 +186,7 @@ public abstract class Liquid : Element {
             int newY = pixelY + (yIncrease * (velocity.y < 0 ? -1 : 1)); // Kind of messy but should wor
                                                                          // k
             if (!PixelGrid.IsInBounds(newX, newY)) {
-                firstUnavailableCell = grid.boundaryHit;
+                returnArray[1] = grid.boundaryHit;
                 break;
             }
 
@@ -192,7 +194,7 @@ public abstract class Liquid : Element {
 
             if (targetCell == this) continue;
             if (targetCell.elementType != ElementType.EMPTYCELL) {
-                firstUnavailableCell = targetCell;
+                returnArray[1] = targetCell;
                 break;
             }
             lastValidPos = new Vector2Int(newX, newY);
@@ -202,8 +204,9 @@ public abstract class Liquid : Element {
             //}
         }
 
-        lastAvailableCell = grid.GetPixel(lastValidPos.x, lastValidPos.y);
-        return new Tuple<Element, Element>(lastAvailableCell, firstUnavailableCell);
+        returnArray[0] = grid.GetPixel(lastValidPos.x, lastValidPos.y);
+        return returnArray;
+        //return new Tuple<Element, Element>(lastAvailableCell, firstUnavailableCell);
     }
 
     public override bool CheckShouldMove() {
