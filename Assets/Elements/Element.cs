@@ -82,7 +82,7 @@ public abstract class Element
         if((this is MoveableSolid || this is ImmoveableSolid) && (targetCell is MoveableSolid || targetCell is ImmoveableSolid)) return false; // If target pos is an empty cell and this cell is an empty cell, cannot move
 
         if (targetCell.elementType == ElementType.EMPTYCELL) return true; // If target pos is an empty cell, can move
-
+         
         return (targetCell.density > density && verticalDir < pixelY) || (targetCell.density < density && verticalDir >= pixelY); // If the density of target pos is higher than this cell and is below it (or vice versa), can move (swap)
     }
 

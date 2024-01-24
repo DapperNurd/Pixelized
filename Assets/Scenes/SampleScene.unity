@@ -375,8 +375,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 20b79d70c8cc45e48868c2c73fe7bbb4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  drawModeDebug: 1
-  debugMode: 0
+  drawModeDebug: 0
+  debugMode: 1
 --- !u!64 &1087845555
 MeshCollider:
   m_ObjectHideFlags: 0
@@ -394,7 +394,7 @@ MeshCollider:
   m_LayerOverridePriority: 0
   m_IsTrigger: 0
   m_ProvidesContacts: 0
-  m_Enabled: 1
+  m_Enabled: 0
   serializedVersion: 5
   m_Convex: 1
   m_CookingOptions: 30
