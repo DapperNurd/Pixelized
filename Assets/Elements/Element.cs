@@ -52,6 +52,8 @@ public abstract class Element
     public float bounciness;
     public float inertiaResistance;
 
+    public int consecutiveDirChange;
+
     public bool isMoving;
 
     // Variables for simulation
@@ -60,6 +62,8 @@ public abstract class Element
     public bool hasStepped;
 
     public void SwapPixel(PixelGrid grid, Element element1, Element element2) {
+
+        //Debug.Log("Moving [" + element1.pixelX + ", " + element1.pixelY + "] to [" + element2.pixelX + ", " + element2.pixelY + "]");
         int x = element1.pixelX, 
             y = element1.pixelY;
         grid.SetPixel(element2.pixelX, element2.pixelY, element1);
@@ -87,7 +91,7 @@ public abstract class Element
     }
 
     public Element GetPixelByOffset(int xOffset, int yOffset) {
-        if (!PixelGrid.IsInBounds(pixelX + xOffset, pixelY + yOffset)) return null;
+        if (!PixelGrid.IsInBounds(pixelX + xOffset, pixelY + yOffset)) return grid.boundaryHit;
         return grid.GetPixel(pixelX + xOffset, pixelY + yOffset);
     }
 
@@ -133,12 +137,12 @@ public abstract class Element
     }
 
     public bool IsMovableCell(Element cellToCheck) { // This should be a PixelGrid method tbh
-        return cellToCheck != null && (cellToCheck.elementType == ElementType.EMPTYCELL || cellToCheck.isMoving);
+        return cellToCheck != null && (cellToCheck.elementType == ElementType.EMPTYCELL || cellToCheck.isMoving) ;
     }
 
     protected void ApplyGravity() {
         velocity = Vector2.ClampMagnitude(velocity + (gravity * Time.deltaTime), 10f); // Adds gravity to velocity, clamps it to be between -10f and 10f
-        if (velocity.y > 0 && velocity.y < 1) velocity.y = 1f; // This basically ensures that if it just started falling, it will actually register as falling
+        if (GetPixelByOffset((int)velocity.x, 1).elementType == ElementType.EMPTYCELL && velocity.y > 0 && velocity.y < 1) velocity.y = 1f; // This basically ensures that if it just started falling, it will actually register as falling
     }
 
     public abstract void step(PixelGrid grid);

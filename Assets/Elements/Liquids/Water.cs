@@ -8,7 +8,7 @@ public class Water : Liquid {
         elementType = ElementType.WATER;
         color = UnityEngine.Color.Lerp(_colorMin, _colorMax, UnityEngine.Random.Range(0, 1f));
         density = 1f;
-        viscosity = 1f;
+        viscosity = 3f;
     }
 
 }
