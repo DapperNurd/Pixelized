@@ -53,6 +53,7 @@ public abstract class Element
     public float inertiaResistance;
 
     public int consecutiveDirChange;
+    public bool skipNextGravity;
 
     public bool isMoving;
 
@@ -136,6 +137,7 @@ public abstract class Element
         return neighbors;
     }
 
+    // kinda a bad name lol, checks to see if current element should be marked as moving, not so much that it can move to the cell (of element) its checking
     public bool IsMovableCell(Element cellToCheck) { // This should be a PixelGrid method tbh
         return cellToCheck != null && (cellToCheck.elementType == ElementType.EMPTYCELL || cellToCheck.isMoving) ;
     }

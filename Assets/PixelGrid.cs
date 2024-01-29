@@ -1,4 +1,5 @@
 using System;
+using System.Threading;
 using Unity.VisualScripting;
 using UnityEngine;
 using static UnityEngine.Rendering.DebugUI;
@@ -11,6 +12,7 @@ public class PixelGrid : MonoBehaviour
     // public static int gridHeight = 4;
 
     public int radius = 2;
+    public bool readMode = false;
     public bool isPaused = false;
 
     public GameObject cursor;
@@ -47,6 +49,18 @@ public class PixelGrid : MonoBehaviour
     // Runs once every frame
     void Update() {
 
+        if(readMode) {
+            if (!isPaused) isPaused = true;
+            radius = 0;
+            if (Input.GetMouseButtonDown(0)) {
+                Element selectedElement = GetElementAtMouse();
+                Color temp = selectedElement.color;
+                selectedElement.color = Color.red;
+                Debug.Log(selectedElement.velocity);
+            }
+            return;
+        }
+
         if (Input.anyKeyDown) {
             if (Input.GetKey(KeyCode.R)) {
                 FillGrid(this, ElementType.EMPTYCELL);
@@ -65,8 +79,7 @@ public class PixelGrid : MonoBehaviour
             }
         }
 
-        int mouseX = Mathf.RoundToInt(Input.mousePosition.x/Screen.width * gridWidth);
-        int mouseY = gridHeight - Mathf.RoundToInt(Input.mousePosition.y/Screen.height * gridHeight);
+        Vector2Int mousePos = GetMousePositionRelativeToGrid();
 
         int scroll = (int)(Input.GetAxis("Mouse ScrollWheel")*15); // Will be (positive or negative) 1, 3, or 4 depending on scroll speed (ScrollWheel axis returns 0.1, 0.2, or 0.3)
         if (scroll != 0) {
@@ -74,13 +87,13 @@ public class PixelGrid : MonoBehaviour
             if(radius < 0) radius = 0; // Keeps it greater or equal to zero
             cursor.transform.localScale = (Vector2.one * 2 * radius) + Vector2.one;
         }
-        if (!isPaused) cursor.transform.position = new Vector3(mouseX-0.5f, -mouseY+0.5f, -5);
+        if (!isPaused) cursor.transform.position = new Vector3(mousePos.x- 0.5f, -mousePos.y+ 0.5f, -5);
 
-        if (IsInBounds(mouseX, mouseY)) {
+        if (IsInBounds(mousePos.x, mousePos.y)) {
             if(Input.GetMouseButton(0) || Input.GetMouseButton(1)) {
                 elementToSpawn = Input.GetMouseButton(1) ? ElementType.EMPTYCELL : (ElementType)elementToPlace;
-                for(int x = mouseX - radius; x <= mouseX + radius; x++) {
-                    for(int y = mouseY - radius; y <= mouseY + radius; y++) {
+                for(int x = mousePos.x - radius; x <= mousePos.x + radius; x++) {
+                    for(int y = mousePos.y - radius; y <= mousePos.y + radius; y++) {
                         if(!IsInBounds(x, y)) continue;
                         if (GetPixel(x, y).elementType == elementToSpawn) continue;
                         SetPixel(x, y, Element.CreateElement(elementToSpawn, x, y, this));
@@ -94,6 +107,14 @@ public class PixelGrid : MonoBehaviour
     void FixedUpdate() {
         if (isPaused) return;
         IterateSteps();
+    }
+
+    public Vector2Int GetMousePositionRelativeToGrid() {
+        return new(Mathf.RoundToInt(Input.mousePosition.x / Screen.width * gridWidth), gridHeight - Mathf.RoundToInt(Input.mousePosition.y / Screen.height * gridHeight));
+    }
+
+    public Element GetElementAtMouse() {
+        return GetPixel(GetMousePositionRelativeToGrid());
     }
 
     /// <summary>
@@ -122,6 +143,10 @@ public class PixelGrid : MonoBehaviour
     /// <returns>bool: if the position is in bounds</returns>
     public static bool IsInBounds(int x, int y) {
         return x < gridWidth && x >= 0 && y < gridHeight && y >= 0;
+    }
+
+    public Element GetPixel(Vector2 xy) {
+        return GetPixel((int)xy.x, (int)xy.y);
     }
 
     /// <summary>
@@ -154,7 +179,7 @@ public class PixelGrid : MonoBehaviour
     /// <param name="pixelGrid">The PixelGrid object whose grid property is to be filled</param>
     /// <param name="elementType">The type of of the element to fill the grid with</param>
     public static void FillGrid(PixelGrid pixelGrid, ElementType elementType) {
-        for (int y = 0; y < gridHeight; y++) {
+        for (int y = gridHeight - 1; y >= 0; y--) {
             for (int x = 0; x < gridWidth; x++) {
                 pixelGrid.SetPixel(x, y, Element.CreateElement(elementType, x, y, pixelGrid));
             }
