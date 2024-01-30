@@ -52,6 +52,8 @@ public abstract class Element
     public float bounciness;
     public float inertiaResistance;
 
+    public int moveDirection;
+
     public int consecutiveDirChange;
     public bool skipNextGravity;
 
