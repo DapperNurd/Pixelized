@@ -30,22 +30,22 @@ public abstract class MoveableSolid : Element {
 
         ApplyGravity();
 
-        Tuple<Element, Element> targetedPositions = CalculateVelocityTravel();
+        Element[] targetedPositions = CalculateVelocityTravel();
         // Item1 <- last empty cell that the velocity path found on calculation (The cell the pixel should move to... can be self if no cell found)
         // Item2 <- first non-empty cell that the path found (basically, what this cell hit when trying to move... is null if not stopped (or hit boundary, need to fix this))
 
         int randomDirection = UnityEngine.Random.Range(0, 2)*2 - 1; // Returns -1 or 1 randomly
-        if (targetedPositions.Item1 != this) { // Basically, if the pixel is moving (targetCell is not itself)
-            SwapPixel(grid, this, targetedPositions.Item1);
-            if (targetedPositions.Item2 != null) { // If it was stopped by something
+        if (targetedPositions[0] != this) { // Basically, if the pixel is moving (targetCell is not itself)
+            SwapPixel(grid, this, targetedPositions[0]);
+            if (targetedPositions[1] != null) { // If it was stopped by something
                 velocity.x = velocity.y * System.Math.Sign(velocity.x);
             }
-            velocity.x *= frictionFactor * targetedPositions.Item1.frictionFactor; // Apply friction forces on velocity.x ... probably needs tweaking
+            velocity.x *= frictionFactor * targetedPositions[0].frictionFactor; // Apply friction forces on velocity.x ... probably needs tweaking
         }
         else { // If the pixel has not moved
             if (Mathf.Abs(velocity.x) >= 1) { // Despite not moving, the pixel still has horizontal velocity (something blocked it probably... )
                 velocity.x = -velocity.x;
-                velocity.x *= frictionFactor * targetedPositions.Item1.frictionFactor;
+                velocity.x *= frictionFactor * targetedPositions[0].frictionFactor;
                 return;
             }
             if (UnityEngine.Random.Range(0, 1f) < inertiaResistance) {
@@ -56,12 +56,12 @@ public abstract class MoveableSolid : Element {
             else if (CanMakeMove(randomDirection, 1)) {
                 SwapPixel(grid, this, GetPixelByOffset(randomDirection, 1));
                 velocity.x = UnityEngine.Random.Range(0, 2) * 2 - 1;
-                velocity.y += velocity.y + (gravity.y * Time.deltaTime);
+                ApplyGravity();
             }
             else if (CanMakeMove(-randomDirection, 1)) {
                 SwapPixel(grid, this, GetPixelByOffset(-randomDirection, 1));
                 velocity.x = -UnityEngine.Random.Range(0, 2) * 2 - 1;
-                velocity.y += velocity.y + (gravity.y * Time.deltaTime);
+                ApplyGravity();
             }
             else {
                 velocity = Vector2.zero;
@@ -70,9 +70,9 @@ public abstract class MoveableSolid : Element {
         }
     }
 
-    private Tuple<Element, Element> CalculateVelocityTravel() {
+    private Element[] CalculateVelocityTravel() {
 
-        Element lastAvailableCell, firstUnavailableCell = null;
+        Element[] returnArray = { this, null };
 
         Vector2Int lastValidPos = new(pixelX, pixelY); // Gets current position
 
@@ -101,7 +101,7 @@ public abstract class MoveableSolid : Element {
 
             if (targetCell == this) continue;
             if (targetCell.elementType != ElementType.EMPTYCELL) {
-                firstUnavailableCell = targetCell;
+                returnArray[1] = targetCell;
                 break;
             }
             foreach (Element neighbor in targetCell.GetHorizontalNeighbors()) {
@@ -113,8 +113,8 @@ public abstract class MoveableSolid : Element {
             lastValidPos = new Vector2Int(newX, newY);
         }
 
-        lastAvailableCell = grid.GetPixel(lastValidPos.x, lastValidPos.y);
-        return new Tuple<Element, Element>(lastAvailableCell, firstUnavailableCell);
+        returnArray[0] = grid.GetPixel(lastValidPos.x, lastValidPos.y);
+        return returnArray;
     }
 
     public override bool CheckShouldMove() {

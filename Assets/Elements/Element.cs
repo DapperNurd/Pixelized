@@ -19,6 +19,7 @@ public enum ElementType
     WATER, OIL,
 
     // GASSES
+    STEAM,
 }
 
 public abstract class Element
@@ -30,6 +31,7 @@ public abstract class Element
         { ElementType.DIRT, typeof(Dirt) },
         { ElementType.WATER, typeof(Water) },
         { ElementType.OIL, typeof(Oil) },
+        { ElementType.STEAM, typeof(Steam) },
     };
 
     public static Element CreateElement(ElementType element, int x, int y, PixelGrid grid) {
@@ -60,7 +62,7 @@ public abstract class Element
     public bool isMoving;
 
     // Variables for simulation
-    public static UnityEngine.Vector2 gravity = new UnityEngine.Vector2(0, 10); // Note: Vertical movement is inverted... positive is downwards
+    public static UnityEngine.Vector2 gravity = new UnityEngine.Vector2(0, 8); // Note: Vertical movement is inverted... positive is downwards
     public PixelGrid grid;
     public bool hasStepped;
 

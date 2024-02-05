@@ -9,7 +9,6 @@ public abstract class Liquid : Element {
     // Variables specifically for Liquid element properties
     protected float viscosity;
 
-
     Color lineColor = UnityEngine.Random.ColorHSV(0f, 1f, 1f, 1f, 0.5f, 1f);
 
     protected Liquid(int x, int y, PixelGrid grid) {
@@ -28,7 +27,6 @@ public abstract class Liquid : Element {
         hasStepped = true;
 
         isMoving = isMoving || CheckShouldMove(); // If isMoving is true, keep it. If not, see if it should be and set it appropriately
-        //Debug.Log("isMOving: " + isMoving);
         if (!isMoving) return; // If is not moving, skip this step
         if (GetPixelByOffset(0, 1).elementType == ElementType.EMPTYCELL || GetPixelByOffset(0, 1).isMoving) ApplyGravity();
 
@@ -36,57 +34,45 @@ public abstract class Liquid : Element {
         // Item1 <- last empty cell that the velocity path found on calculation (The cell the pixel should move to... can be self if no cell found)
         // Item2 <- first non-empty cell that the path found (basically, what this cell hit when trying to move... is null if not stopped (or hit boundary, need to fix this))
 
-        //Debug.DrawLine(new(pixelX / Screen.width * PixelGrid.gridWidth, pixelX / Screen.width * PixelGrid.gridWidth), new((pixelX +velocity.x) / Screen.width * PixelGrid.gridWidth, (pixelY+velocity.y) / Screen.width * PixelGrid.gridWidth), Color.red);
-
-
-        //int randomDirection = UnityEngine.Random.Range(0, 2) * 2 - 1; // Returns -1 or 1 randomly
-        
         if (targetedPositions[0] != this) { // Basically, if the pixel is moving (targetCell is not itself)
-            if (targetedPositions[1] != null /*&& (targetedPositions[1].elementType != elementType || !targetedPositions[1].isMoving)*//* && Mathf.Approximately(Mathf.Floor(targetedPositions[1].velocity.y), 0)*/) { // If it was stopped by something
-                if (targetedPositions[1].elementType == elementType) {
-                    if(velocity.magnitude < targetedPositions[1].velocity.magnitude) {
-                        velocity = targetedPositions[1].velocity * 0.9f; // Might be able to remove these 0.9fs, idk if they do anything besides add more unneccessary calculation
-                    }
-                    else {
-                        targetedPositions[1].velocity = velocity * 0.9f;
-                    }
-                }
+            SwapPixel(grid, this, targetedPositions[0]);
+            if (targetedPositions[1] != null && targetedPositions[1].velocity.y < 1) { // If it was stopped by something
                 float newY = Mathf.Min(velocity.y, targetedPositions[1].velocity.y);
-                float newX = /*Mathf.Approximately(velocity.x, 0) ? moveDirection : */velocity.x + (newY * Mathf.Sign(velocity.x));
+                float newX = (velocity.y * Mathf.Sign(velocity.x));
 
                 velocity.x = newX * viscosity;
                 velocity.y = newY;
+                if (GetPixelByOffset(0, 1).elementType == ElementType.EMPTYCELL) ApplyGravity();
             }
-            //Debug.Log((pixelX - targetedPositions.Item1.pixelX) + ", " + (pixelY - targetedPositions.Item1.pixelY));
-            SwapPixel(grid, this, targetedPositions[0]);
-            //if (velocity.y == 0 && Mathf.Abs(velocity.x) > 1) velocity.x *= 0.9f; 
         }
         else { // If the pixel has not moved
-            //color = moveDirection == 1 ? Color.red : Color.blue;
-            // I believe what's happening is that velocity y is slowing down as water travels on a surface, and newX doesnt necessarily always keep up. So it eventually slows down until it doesnt have enough velocity, and then changes direction. 
-            if (Mathf.Abs(velocity.x) >= 1 && !CanMakeMove(moveDirection, 0) && CanMakeMove(-moveDirection, 0)) { // Despite not moving, the pixel still has horizontal velocity (something blocked it probably... )
-                //Debug.DrawLine(new(pixelX - 0.5f, -pixelY + 0.5f, 0), new(targetedPositions[1].pixelX - 0.5f, -targetedPositions[1].pixelY + 0.5f, 0), lineColor, 0, false);
-                if (GetPixelByOffset(-moveDirection, 1).elementType == ElementType.EMPTYCELL) SwapPixel(grid, this, GetPixelByOffset(0, 1));
-                //else if (Mathf.Approximately(GetPixelByOffset(0, -1).velocity.x,velocity.x)) color = Color.magenta;
-                //velocity.y = 0;
-
-                    velocity.x = -velocity.x / 4;
-                    moveDirection = -moveDirection;
-                // no return because we are in if/else rn
+            if (targetedPositions[1] != null && targetedPositions[1].elementType == elementType) {
+                if (velocity.magnitude < targetedPositions[1].velocity.magnitude) {
+                    velocity = targetedPositions[1].velocity * 0.9f; // Might be able to remove these 0.9fs, idk if they do anything besides add more unneccessary calculation
+                }
+                else {
+                    targetedPositions[1].velocity = velocity * 0.9f;
+                }
             }
-            //Debug.Log("Did not move: " + velocity.y);
+            if (Mathf.Abs(velocity.x) >= 1 && !CanMakeMove(moveDirection, 0) && CanMakeMove(-moveDirection, 0)) { // Despite not moving, the pixel still has horizontal velocity (something blocked it probably... )
+                //if (GetPixelByOffset(-moveDirection, 1).elementType == ElementType.EMPTYCELL) SwapPixel(grid, this, GetPixelByOffset(0, 1));
+
+                velocity.x = -velocity.x / 4;
+                moveDirection = -moveDirection;
+            }
 
             else {
-                moveDirection = UnityEngine.Random.Range(0, 2) * 2 - 1;
-                //velocity.x = UnityEngine.Random.Range(0, 2) * 2 - 1;
+                
                 if (CanMakeMove(moveDirection, 1)) {
                     SwapPixel(grid, this, GetPixelByOffset(moveDirection, 1));
                     //Debug.Log("Manually ran for [" + moveDirection + ", 1]");
+                    ApplyGravity();
                     velocity.x = moveDirection * viscosity;
                 }
                 else if (CanMakeMove(-moveDirection, 1)) {
                     SwapPixel(grid, this, GetPixelByOffset(-moveDirection, 1));
                     //Debug.Log("Manually ran for [" + -moveDirection + ", 1]");
+                    ApplyGravity();
                     velocity.x = -moveDirection * viscosity;
                 }
                 else if (CanMakeMove(moveDirection, 0)) {
@@ -112,8 +98,6 @@ public abstract class Liquid : Element {
     private Element[] CalculateVelocityTravel() {
 
         Element[] returnArray = { this, null };
-
-        //Element lastAvailableCell, firstUnavailableCell = null;
 
         Vector2Int lastValidPos = new(pixelX, pixelY); // Gets current position
 
@@ -143,26 +127,20 @@ public abstract class Liquid : Element {
 
             Element targetCell = grid.GetPixel(newX, newY);
 
-            //if (targetCell == this) continue;
             if (targetCell.elementType != ElementType.EMPTYCELL) {
                 returnArray[1] = targetCell;
                 break;
             }
             lastValidPos = new Vector2Int(newX, newY);
-            //if(velocity.y == 0 && targetCell.GetPixelByOffset(0, 1) != null && targetCell.GetPixelByOffset(0,1).elementType == ElementType.EMPTYCELL) {
-            //    SwapPixel(grid, this, targetCell.GetPixelByOffset(0, 1));
-            //    break;
-            //}
         }
 
         returnArray[0] = grid.GetPixel(lastValidPos.x, lastValidPos.y);
         return returnArray;
-        //return new Tuple<Element, Element>(lastAvailableCell, firstUnavailableCell);
     }
 
-    // Not a very good name, change later... checks if the space should enable isMoving kinda
+    //// Not a very good name, change later... checks if the space should enable isMoving kinda
     public override bool CheckShouldMove() {
-        return IsMovableCell(GetPixelByOffset(0, 1)) || 
+        return IsMovableCell(GetPixelByOffset(0, 1)) ||
                IsMovableCell(GetPixelByOffset(moveDirection, 1)) ||
                IsMovableCell(GetPixelByOffset(-moveDirection, 1)) ||
                IsMovableCell(GetPixelByOffset(moveDirection, 0)) ||

@@ -73,6 +73,7 @@ public class PixelGrid : MonoBehaviour
                 // KeyCode.Alpha1 = 49
                 foreach (int num in keyCodes) {
                     if (Input.GetKey((KeyCode)(num+48))) {
+                        Debug.Log((ElementType)elementToPlace);
                         elementToPlace = num;
                     }
                 }
