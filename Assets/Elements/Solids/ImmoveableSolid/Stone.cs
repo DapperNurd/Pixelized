@@ -9,7 +9,6 @@ public class Stone : ImmoveableSolid {
         color = UnityEngine.Color.Lerp(_colorMin, _colorMax, UnityEngine.Random.Range(0, 1f));
         density = 3f;
         frictionFactor = 0.7f;
-        bounciness = 0.05f;
     }
 
 }

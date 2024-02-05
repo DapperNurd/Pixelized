@@ -54,9 +54,17 @@ public class PixelGrid : MonoBehaviour
             radius = 0;
             if (Input.GetMouseButtonDown(0)) {
                 Element selectedElement = GetElementAtMouse();
-                Color temp = selectedElement.color;
-                selectedElement.color = Color.red;
-                Debug.Log(selectedElement.velocity);
+                foreach (Element neighor in selectedElement.GetAllNeighbors())
+                {
+                    neighor.color = Color.blue;
+                }
+                foreach (Element neighor in selectedElement.GetImmediateNeighbors())
+                {
+                    neighor.color = Color.red;
+                }
+                //Color temp = selectedElement.color;
+                //selectedElement.color = Color.red;
+                //Debug.Log(selectedElement.velocity);
             }
             return;
         }

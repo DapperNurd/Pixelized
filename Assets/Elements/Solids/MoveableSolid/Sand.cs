@@ -9,7 +9,6 @@ public class Sand : MoveableSolid {
         color = UnityEngine.Color.Lerp(_colorMin, _colorMax, UnityEngine.Random.Range(0, 1f));
         density = 3f;
         frictionFactor = 0.75f;
-        bounciness = 0;
         inertiaResistance = 0.15f;
     }
 

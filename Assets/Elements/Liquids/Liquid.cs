@@ -19,12 +19,13 @@ public abstract class Liquid : Element {
         pixelX = x;
         pixelY = y;
         this.grid = grid;
-        consecutiveDirChange = 0;
     }
 
     public override void step(PixelGrid grid) {
         if (hasStepped) return; // Prevents cells from running twice in the same step
         hasStepped = true;
+
+        lifetime++;
 
         isMoving = isMoving || CheckShouldMove(); // If isMoving is true, keep it. If not, see if it should be and set it appropriately
         if (!isMoving) return; // If is not moving, skip this step

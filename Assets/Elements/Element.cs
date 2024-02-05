@@ -47,17 +47,15 @@ public abstract class Element
     public int pixelY;
     public UnityEngine.Vector2 velocity;
 
+    public int moveDirection;
+
     public UnityEngine.Color color;
 
     public float density;
     public float frictionFactor;
-    public float bounciness;
     public float inertiaResistance;
 
-    public int moveDirection;
-
-    public int consecutiveDirChange;
-    public bool skipNextGravity;
+    public int lifetime = 0;
 
     public bool isMoving;
 
@@ -112,6 +110,21 @@ public abstract class Element
         return neighbors;
     }
 
+    public Element[] GetImmediateNeighbors()
+    {
+        Element[] neighbors = new Element[4];
+        int index = 0;
+        // Not sure if this is more efficeint than just running GetPixelByOffset 4 times lol
+        for (int y = -1; y <= 1; y++)
+        {
+            for (int x = -1; x <= 1; x++)
+            {
+                if (y == 0 ^ x == 0) neighbors[index++] = GetPixelByOffset(x, y); // Uses XOR to ignore corners, im kinda big brain ngl
+            }
+        }
+        return neighbors;
+    }
+
     public Element[] GetHorizontalNeighbors() {
         Element[] neighbors = new Element[2];
         int index = 0;
@@ -139,6 +152,15 @@ public abstract class Element
             }
         }
         return neighbors;
+    }
+
+    public bool IsExposed()
+    {
+        foreach(Element neighbor in GetImmediateNeighbors())
+        {
+            if (neighbor.elementType == ElementType.EMPTYCELL) return true;
+        }
+        return false;
     }
 
     // kinda a bad name lol, checks to see if current element should be marked as moving, not so much that it can move to the cell (of element) its checking

@@ -17,13 +17,14 @@ public abstract class MoveableSolid : Element {
         // Default values for if I forget to override lol
         density = 1f;
         frictionFactor = 1f;
-        bounciness = 0f;
         inertiaResistance = 0.5f;
 }
 
     public override void step(PixelGrid grid) {
         if (hasStepped) return; // Prevents cells from running twice in the same step
         hasStepped = true;
+
+        lifetime++;
 
         isMoving = isMoving || CheckShouldMove(); // If isMoving is true, keep it. If not, see if it should be and set it appropriately
         if (!isMoving) return; // If is not moving, skip this step

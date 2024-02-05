@@ -9,7 +9,6 @@ public class Dirt : MoveableSolid {
         color = UnityEngine.Color.Lerp(_colorMin, _colorMax, UnityEngine.Random.Range(0, 1f));
         density = 5f;
         frictionFactor = 0.6f;
-        bounciness = 0f;
         inertiaResistance = 0.6f;
     }
 }
