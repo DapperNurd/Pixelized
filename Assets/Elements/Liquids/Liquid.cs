@@ -7,7 +7,7 @@ using static UnityEngine.RuleTile.TilingRuleOutput;
 public abstract class Liquid : Element {
 
     // Variables specifically for Liquid element properties
-    protected float viscosity;
+    protected float flowRate;
 
     Color lineColor = UnityEngine.Random.ColorHSV(0f, 1f, 1f, 1f, 0.5f, 1f);
 
@@ -29,7 +29,8 @@ public abstract class Liquid : Element {
 
         isMoving = isMoving || CheckShouldMove(); // If isMoving is true, keep it. If not, see if it should be and set it appropriately
         if (!isMoving) return; // If is not moving, skip this step
-        if (GetPixelByOffset(0, 1).elementType == ElementType.EMPTYCELL || GetPixelByOffset(0, 1).isMoving) ApplyGravity();
+        Element pixelBelow = GetPixelByOffset(0, 1);
+        if (IsMovableCell(GetPixelByOffset(0,1)) || GetPixelByOffset(0, 1).isMoving) ApplyGravity();
 
         Element[] targetedPositions = CalculateVelocityTravel();
         // Item1 <- last empty cell that the velocity path found on calculation (The cell the pixel should move to... can be self if no cell found)
@@ -37,54 +38,59 @@ public abstract class Liquid : Element {
 
         if (targetedPositions[0] != this) { // Basically, if the pixel is moving (targetCell is not itself)
             SwapPixel(grid, this, targetedPositions[0]);
-            if (targetedPositions[1] != null && targetedPositions[1].velocity.y < 1) { // If it was stopped by something
+            if (targetedPositions[1] != null) { // If it was stopped by something
                 float newY = Mathf.Min(velocity.y, targetedPositions[1].velocity.y);
-                float newX = (velocity.y * Mathf.Sign(velocity.x));
+                float newX = (newY * Mathf.Sign(velocity.x));
 
-                velocity.x = newX * viscosity;
+                velocity.x = newX * flowRate;
                 velocity.y = newY;
                 if (GetPixelByOffset(0, 1).elementType == ElementType.EMPTYCELL) ApplyGravity();
             }
         }
         else { // If the pixel has not moved
-            if (targetedPositions[1] != null && targetedPositions[1].elementType == elementType) {
-                if (velocity.magnitude < targetedPositions[1].velocity.magnitude) {
-                    velocity = targetedPositions[1].velocity * 0.9f; // Might be able to remove these 0.9fs, idk if they do anything besides add more unneccessary calculation
-                }
-                else {
-                    targetedPositions[1].velocity = velocity * 0.9f;
-                }
-            }
+            //if (targetedPositions[1] != null && targetedPositions[1].elementType == elementType) {
+            //    if (velocity.magnitude < targetedPositions[1].velocity.magnitude) {
+            //        velocity = targetedPositions[1].velocity * 0.9f; // Might be able to remove these 0.9fs, idk if they do anything besides add more unneccessary calculation
+            //    }
+            //    else {
+            //        targetedPositions[1].velocity = velocity * 0.9f;
+            //    }
+            //}
+
             if (Mathf.Abs(velocity.x) >= 1 && !CanMakeMove(moveDirection, 0) && CanMakeMove(-moveDirection, 0)) { // Despite not moving, the pixel still has horizontal velocity (something blocked it probably... )
                 //if (GetPixelByOffset(-moveDirection, 1).elementType == ElementType.EMPTYCELL) SwapPixel(grid, this, GetPixelByOffset(0, 1));
 
                 velocity.x = -velocity.x / 4;
                 moveDirection = -moveDirection;
             }
-
             else {
                 
                 if (CanMakeMove(moveDirection, 1)) {
                     SwapPixel(grid, this, GetPixelByOffset(moveDirection, 1));
                     //Debug.Log("Manually ran for [" + moveDirection + ", 1]");
                     ApplyGravity();
-                    velocity.x = moveDirection * viscosity;
+                    if (!(GetPixelByOffset(0, 1) is EmptyCell)) {
+                        velocity.x = moveDirection * flowRate;
+                        ApplyGravity();
+                    }
                 }
                 else if (CanMakeMove(-moveDirection, 1)) {
                     SwapPixel(grid, this, GetPixelByOffset(-moveDirection, 1));
                     //Debug.Log("Manually ran for [" + -moveDirection + ", 1]");
-                    ApplyGravity();
-                    velocity.x = -moveDirection * viscosity;
+                    if (!(GetPixelByOffset(0, 1) is EmptyCell)) {
+                        velocity.x = -moveDirection * flowRate;
+                        ApplyGravity();
+                    }
                 }
                 else if (CanMakeMove(moveDirection, 0)) {
                     SwapPixel(grid, this, GetPixelByOffset(moveDirection, 0));
                     //Debug.Log("Manually ran for [" + moveDirection + ", 0]");
-                    velocity.x = moveDirection * viscosity;
+                    if (!(GetPixelByOffset(0, 1) is EmptyCell)) velocity.x = moveDirection * flowRate;
                 }
                 else if (CanMakeMove(-moveDirection, 0)) {
                     SwapPixel(grid, this, GetPixelByOffset(-moveDirection, 0));
                     //Debug.Log("Manually ran for [" + -moveDirection + ", 0]");
-                    velocity.x = -moveDirection * viscosity;
+                    if (!(GetPixelByOffset(0, 1) is EmptyCell)) velocity.x = -moveDirection * flowRate;
                 }
                 else {
                     velocity = Vector2.zero;
@@ -128,11 +134,11 @@ public abstract class Liquid : Element {
 
             Element targetCell = grid.GetPixel(newX, newY);
 
-            if (targetCell.elementType != ElementType.EMPTYCELL) {
+            if (targetCell is MoveableSolid || targetCell is ImmoveableSolid || (targetCell is Liquid && targetCell.density > density)) {
                 returnArray[1] = targetCell;
                 break;
             }
-            lastValidPos = new Vector2Int(newX, newY);
+            else if (targetCell.elementType != elementType) lastValidPos = new Vector2Int(newX, newY);
         }
 
         returnArray[0] = grid.GetPixel(lastValidPos.x, lastValidPos.y);

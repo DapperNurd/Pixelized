@@ -18,6 +18,7 @@ public class Gas : Element
         hasStepped = true;
 
         lifetime++;
+        CheckLifetime();
 
         isMoving = isMoving || CheckShouldMove();
         if (!isMoving) return;
@@ -38,7 +39,6 @@ public class Gas : Element
         else if(moveDirection != 0) { // Changes horizontal move direction when it can't move horizontally... This is implemented so gas continues to flow the same direction until obstructed, then changes direction
             isMoving = false;
         }
-        CheckLifetime();
     }
 
     public override bool CanMakeMove(int horizontalOffset, int verticalOffset)

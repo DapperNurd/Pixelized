@@ -60,7 +60,6 @@ public abstract class Element
     public bool isMoving;
 
     // Variables for simulation
-    public static UnityEngine.Vector2 gravity = new UnityEngine.Vector2(0, 8); // Note: Vertical movement is inverted... positive is downwards
     public PixelGrid grid;
     public bool hasStepped;
 
@@ -165,11 +164,11 @@ public abstract class Element
 
     // kinda a bad name lol, checks to see if current element should be marked as moving, not so much that it can move to the cell (of element) its checking
     public bool IsMovableCell(Element cellToCheck) { // This should be a PixelGrid method tbh
-        return cellToCheck != null && (cellToCheck.elementType == ElementType.EMPTYCELL || cellToCheck.isMoving) ;
+        return cellToCheck != null && (cellToCheck is EmptyCell || cellToCheck.isMoving || cellToCheck.density < density);
     }
 
     protected void ApplyGravity() {
-        velocity = Vector2.ClampMagnitude(velocity + (gravity * Time.deltaTime), 10f); // Adds gravity to velocity, clamps it to be between -10f and 10f
+        velocity = Vector2.ClampMagnitude(velocity + (World.gravity * Time.deltaTime), 10f); // Adds gravity to velocity, clamps it to be between -10f and 10f
         if (GetPixelByOffset((int)velocity.x, 1).elementType == ElementType.EMPTYCELL && velocity.y > 0 && velocity.y < 1) velocity.y = 1f; // This basically ensures that if it just started falling, it will actually register as falling
     }
 

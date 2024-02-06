@@ -11,6 +11,9 @@ public class PixelGrid : MonoBehaviour
     // public static int gridWidth = 6;
     // public static int gridHeight = 4;
 
+    public Vector2Int xRange = new(0, gridWidth);
+    public Vector2Int yRange = new(0, gridHeight);
+
     public int radius = 2;
     public bool readMode = false;
     public bool isPaused = false;

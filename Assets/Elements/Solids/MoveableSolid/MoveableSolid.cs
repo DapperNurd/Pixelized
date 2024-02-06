@@ -38,6 +38,7 @@ public abstract class MoveableSolid : Element {
         int randomDirection = UnityEngine.Random.Range(0, 2)*2 - 1; // Returns -1 or 1 randomly
         if (targetedPositions[0] != this) { // Basically, if the pixel is moving (targetCell is not itself)
             SwapPixel(grid, this, targetedPositions[0]);
+            if (targetedPositions[0] is Liquid) targetedPositions[0].velocity = new(UnityEngine.Random.Range(0, 5) - 2, -velocity.y * 0.3f);
             if (targetedPositions[1] != null) { // If it was stopped by something
                 velocity.x = velocity.y * System.Math.Sign(velocity.x);
             }
@@ -101,17 +102,25 @@ public abstract class MoveableSolid : Element {
             Element targetCell = grid.GetPixel(newX, newY);
 
             if (targetCell == this) continue;
-            if (targetCell.elementType != ElementType.EMPTYCELL) {
+            if (!(targetCell is EmptyCell)) {
                 returnArray[1] = targetCell;
-                break;
+                if(targetCell is MoveableSolid || targetCell is ImmoveableSolid) break;
             }
-            foreach (Element neighbor in targetCell.GetHorizontalNeighbors()) {
+            foreach (Element neighbor in targetCell.GetHorizontalNeighbors()) { // Attempt to set neighbors isMoving true, might make this a function
                 if (neighbor == null) continue;
                 if (neighbor is MoveableSolid || neighbor is ImmoveableSolid) {
                     neighbor.isMoving = UnityEngine.Random.Range(0, 1f) > neighbor.inertiaResistance || neighbor.isMoving;
                 }
             }
-            lastValidPos = new Vector2Int(newX, newY);
+            // The idea here is that if the target cell is a liquid (and the current cell is not moving through liquid [hence the check for empty cell],
+            // it will swap the liquid 
+            //if(targetCell is Liquid) {
+            //    if(i == upperBound && grid.GetPixel((Vector2)lastValidPos).elementType == ElementType.EMPTYCELL) {
+            //        //SwapPixel(grid, this, grid.GetPixel((Vector2)lastValidPos));
+            //        targetCell.velocity = new(UnityEngine.Random.Range(0, 5) - 2, -velocity.y*0.5f);
+            //    }
+            //}
+            /*else*/ lastValidPos = new Vector2Int(newX, newY);
         }
 
         returnArray[0] = grid.GetPixel(lastValidPos.x, lastValidPos.y);

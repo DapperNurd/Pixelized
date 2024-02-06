@@ -6,8 +6,8 @@ public class Oil : Liquid {
         // Variables for Element properties
         elementType = ElementType.OIL;
         color = grey;
-        density = 0.5f;
-        viscosity = 2f;
+        density = 0.9f;
+        flowRate = 2f;
     }
 
 }
