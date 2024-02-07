@@ -39,14 +39,14 @@ public class GridRenderer : MonoBehaviour
         for(int y = 0; y < height; y++) {
             for(int x = 0; x < width; x++) {
                 Color colorToDraw = grid.GetPixel(x, y).color;
-                if (drawModeDebug) colorToDraw = GetColorToDraw(grid.GetPixel(x, y));
+                if (drawModeDebug) colorToDraw = GetDebugColor(grid.GetPixel(x, y));
                 texture.SetPixel(x, y, colorToDraw);
             }
         }
         texture.Apply();
     }
 
-    private Color GetColorToDraw(Element element) {
+    private Color GetDebugColor(Element element) {
         switch(debugMode) {
             case DrawBy.isMoving:
                 if (element.elementType == ElementType.EMPTYCELL || element is ImmoveableSolid) return element.color;

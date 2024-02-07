@@ -18,7 +18,7 @@ public class Gas : Element
         hasStepped = true;
 
         lifetime++;
-        CheckLifetime();
+        if (CheckLifetime()) return;
 
         isMoving = isMoving || CheckShouldMove();
         if (!isMoving) return;
@@ -64,5 +64,5 @@ public class Gas : Element
         IsMovableCell(GetPixelByOffset(-moveDirection, 0));
     }
 
-    public virtual void CheckLifetime() { return; }
+    public virtual bool CheckLifetime() { return false; }
 }

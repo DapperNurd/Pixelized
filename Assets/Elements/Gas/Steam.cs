@@ -16,19 +16,17 @@ public class Steam : Gas
         density = 0.1f;
     }
 
-    public override void CheckLifetime() {
+    public override bool CheckLifetime() {
         if (lifetime > lifetimeThreshold) {
-            if (!IsExposed()) {
-                lifetime -= 60;
-                return;
-            }
+            if (!IsExposed()) lifetime -= 60;
             else {
                 if (Random.Range(0, 20) == 0) {
                     grid.SetPixel(pixelX, pixelY, CreateElement(ElementType.WATER, pixelX, pixelY, grid));
                 }
                 else grid.SetPixel(pixelX, pixelY, CreateElement(ElementType.EMPTYCELL, pixelX, pixelY, grid));
-
+                return true;
             }
         }
+        return false;
     }
 }
