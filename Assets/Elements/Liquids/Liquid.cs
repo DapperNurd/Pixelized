@@ -40,7 +40,7 @@ public abstract class Liquid : Element {
             SwapPixel(grid, this, targetedPositions[0]);
             if (targetedPositions[1] != null) { // If it was stopped by something
                 float newY = Mathf.Min(velocity.y, targetedPositions[1].velocity.y);
-                float newX = (newY * Mathf.Sign(velocity.x));
+                float newX = (newY/3f * Mathf.Sign(velocity.x));
 
                 velocity.x = newX * flowRate;
                 velocity.y = newY;
